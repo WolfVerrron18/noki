@@ -1,6 +1,6 @@
 <template>
   <div class="stack center screen">
-    <NokiMascot :mood="auth.error ? 'sad' : preview ? 'happy' : 'thinking'" :size="160" />
+    <NokiMascot :mood="auth.error ? 'sad' : preview || newcomer ? 'happy' : 'thinking'" :size="160" />
     <template v-if="auth.error">
       <h2>{{ t('auth.error') }}</h2>
       <p class="hint">{{ t(auth.error) }}</p>
@@ -14,12 +14,21 @@
         {{ t('preview.asClient') }}
       </NokiButton>
     </template>
+    <!-- открыли бота без ссылки мастера и своего кабинета нет: мастер пришла впервые или клиентка заглянула -->
+    <template v-else-if="newcomer">
+      <h2>{{ t('welcome.title') }}</h2>
+      <p class="hint">{{ t('welcome.subtitle') }}</p>
+      <NokiButton @click="router.push({ name: 'master-onboarding' })">{{ t('welcome.asMaster') }}</NokiButton>
+      <NokiButton variant="soft" @click="router.push({ name: 'client-my' })">{{ t('welcome.myBookings') }}</NokiButton>
+      <p class="hint">{{ t('welcome.clientHint') }}</p>
+    </template>
     <p v-else class="hint">{{ t('common.loading') }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-// Точка входа: логин и выбор ветки «клиентка / мастер»
+// Точка входа: логин и выбор ветки.
+// Ссылка мастера (startapp) — страница записи; есть свой кабинет — кабинет; иначе — спрашиваем, кто пришла.
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -32,8 +41,11 @@ import { getStartParam, isInTelegram } from '@/telegram'
 const { t } = useI18n()
 const auth = useAuth()
 const router = useRouter()
+const store = useMaster()
 // В браузере при разработке показываем выбор роли вместо автоперехода
 const preview = ref(false)
+/** Кабинета нет и ссылки мастера нет — показываем выбор «мастер / мои записи» */
+const newcomer = ref(false)
 
 async function start() {
   // повторная попытка после ошибки загрузки данных: вход уже есть, сбрасываем только ошибку
@@ -46,8 +58,14 @@ async function start() {
     preview.value = true
     return
   }
-  // guard роутера сам отправит в онбординг, если профиля мастера ещё нет
-  router.replace({ name: 'master-home' })
+  try {
+    await store.load()
+  } catch {
+    auth.error = 'common.networkError'
+    return
+  }
+  if (store.master) router.replace({ name: 'master-home' })
+  else newcomer.value = true
 }
 
 function openMaster() {
@@ -56,7 +74,6 @@ function openMaster() {
 
 /** Режим просмотра: страница записи к тестовому мастеру, если он уже создан */
 async function openClient() {
-  const store = useMaster()
   await store.load()
   router.push({ name: 'client-master', params: { slug: store.master?.slug ?? 'demo' } })
 }

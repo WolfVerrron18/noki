@@ -27,7 +27,10 @@ interface Db {
     user: string
   })[]
   /** Все услуги всех мастеров */
-  services: Service[]
+  services: (Service & {
+    /** Удалена мастером: в списках её нет, записи на неё остаются */
+    archived?: boolean
+  })[]
   /** Все записи */
   appointments: Appointment[]
   /** Отзывы: в режиме просмотра никуда не отправляются */
@@ -66,7 +69,7 @@ db.services.forEach((s, i) => {
 })
 
 /** Услуги мастера в его порядке */
-const servicesOf = (masterId: string) => db.services.filter((s) => s.master === masterId).sort((a, b) => a.sort - b.sort)
+const servicesOf = (masterId: string) => db.services.filter((s) => s.master === masterId && !s.archived).sort((a, b) => a.sort - b.sort)
 
 function save() {
   try {
@@ -189,6 +192,13 @@ export const mockRepo: Repo = {
     Object.assign(s, data)
     save()
     return { ...s }
+  },
+
+  async deleteService(serviceId) {
+    const s = db.services.find((x) => x.id === serviceId)
+    if (!s) throw new Error('not found')
+    s.archived = true
+    save()
   },
 
   async reorderServices(ids) {

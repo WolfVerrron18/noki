@@ -1,5 +1,11 @@
 <template>
   <div class="stack">
+    <!-- мастер открыла свою же ссылку: так её страницу видят клиентки -->
+    <div v-if="isOwnPage" class="own">
+      <span>{{ t('client.ownPage') }}</span>
+      <button type="button" class="own-link" @click="router.push({ name: 'master-home' })">{{ t('client.toCabinet') }}</button>
+    </div>
+
     <div class="hero">
       <NokiMascot mood="happy" :size="160" :greet="EnumNokiReaction.Wave" />
       <h1>{{ master.name }}</h1>
@@ -67,6 +73,7 @@ import NokiMascot from '@/components/mascot/NokiMascot.vue'
 import { EnumNokiReaction } from '@/components/mascot/rive/character'
 import NokiButton from '@/components/ui/NokiButton.vue'
 import { useBooking } from '@/stores/booking'
+import { useMaster } from '@/stores/master'
 import { useFormat } from '@/composables/useFormat'
 import { haptic } from '@/telegram'
 import { useStaggerIn } from '@/animations/useStaggerIn'
@@ -90,6 +97,9 @@ const fmt = useFormat()
 
 // BookingLayout показывает экран только когда мастер загружен
 const master = computed(() => store.master!)
+const own = useMaster()
+/** Это страница самой мастерицы, которая сейчас в приложении */
+const isOwnPage = computed(() => own.master?.id === master.value.id)
 const list = ref<HTMLElement | null>(null)
 useStaggerIn(list)
 
@@ -132,6 +142,31 @@ function open(serviceId: string) {
 </script>
 
 <style scoped lang="scss">
+.own {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--secondary-100);
+  color: var(--secondary-on-soft);
+  font-size: var(--font-size-sm);
+}
+
+.own-link {
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .hero {
   display: flex;
   flex-direction: column;

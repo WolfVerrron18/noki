@@ -94,6 +94,13 @@ const en: Messages = {
     openInTelegram: 'Please open the app in Telegram',
     failed: 'Could not sign in',
   },
+  welcome: {
+    title: 'Hi! I’m Noki',
+    subtitle: 'I help beauty pros manage bookings, and clients book without endless messages',
+    asMaster: 'I’m a pro — create my space',
+    myBookings: 'My bookings',
+    clientHint: 'To book, open the link your beauty pro sent you',
+  },
   preview: {
     title: 'Preview mode',
     subtitle: 'Opened in a browser — pick whose screens to view',
@@ -188,6 +195,11 @@ const en: Messages = {
     nameRequired: 'Enter a name',
     durationInvalid: '5 to 600 minutes',
     priceInvalid: 'Price cannot be negative',
+    delete: 'Delete service',
+    deleteConfirm: 'Delete “{name}”? Clients won’t be able to book it anymore; past bookings stay',
+    notFound: 'This service doesn’t exist',
+    notFoundHint: 'It may have been deleted',
+    toList: 'Back to services',
     categoryLabel: 'Type of service',
     presets: 'Popular services',
     preset: {
@@ -392,6 +404,8 @@ const en: Messages = {
   client: {
     notFound: 'Master not found',
     notFoundHint: 'Check the link — there may be a typo',
+    ownPage: 'This is your page — this is how clients see it',
+    toCabinet: 'My space',
   },
 }
 

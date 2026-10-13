@@ -1,5 +1,16 @@
 <template>
-  <div class="stack">
+  <div v-if="notFound" class="stack">
+    <!-- открыли по адресу услуги, которой нет (удалили или чужая) -->
+    <PageHeader :title="t('services.editTitle')" :back="back" />
+    <div class="stack center not-found">
+      <NokiMascot mood="sleepy" :size="120" />
+      <h2>{{ t('services.notFound') }}</h2>
+      <p class="hint">{{ t('services.notFoundHint') }}</p>
+      <NokiButton variant="soft" @click="back">{{ t('services.toList') }}</NokiButton>
+    </div>
+  </div>
+
+  <div v-else class="stack">
     <PageHeader :title="existing ? t('services.editTitle') : t('services.newTitle')" :back="back" />
 
     <NokiInput v-model="form.name" :label="t('services.name')" :placeholder="t('services.namePlaceholder')" :error="errors.name" />
@@ -42,6 +53,8 @@
 
     <NokiSwitch v-model="form.is_active" :label="t('services.visible')" />
 
+    <NokiButton v-if="existing" variant="ghost" class="delete" :disabled="saving" @click="remove">{{ t('services.delete') }}</NokiButton>
+
     <p v-if="errors.save" class="error">{{ errors.save }}</p>
     <NokiMainButton :text="t('common.save')" :loading="saving" @click="save" />
   </div>
@@ -52,6 +65,8 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import NokiMainButton from '@/components/ui/NokiMainButton.vue'
+import NokiButton from '@/components/ui/NokiButton.vue'
+import NokiMascot from '@/components/mascot/NokiMascot.vue'
 import NokiInput from '@/components/ui/NokiInput.vue'
 import NokiTextarea from '@/components/ui/NokiTextarea.vue'
 import NokiNumberInput from '@/components/ui/NokiNumberInput.vue'
@@ -63,7 +78,7 @@ import { EnumServiceCategory } from '@/components/services/category'
 import { SERVICE_PRESETS } from '@/components/services/presets'
 import { useMaster } from '@/stores/master'
 import { useFormat } from '@/composables/useFormat'
-import { haptic } from '@/telegram'
+import { confirmDialog, haptic } from '@/telegram'
 
 const PRESETS = [30, 60, 90, 120, 150]
 const CUSTOM = -1
@@ -83,6 +98,8 @@ const store = useMaster()
 const fmt = useFormat()
 
 const existing = props.id ? store.services.find((s) => s.id === props.id) : undefined
+/** Адрес с id, но такой услуги у мастера нет — не подсовываем пустую форму «новой услуги» */
+const notFound = !!props.id && !existing
 const form = reactive({
   name: existing?.name ?? '',
   duration_min: existing?.duration_min ?? 60,
@@ -129,6 +146,22 @@ function back() {
   router.push({ name: 'master-services' })
 }
 
+async function remove() {
+  if (!existing || !(await confirmDialog(t('services.deleteConfirm', { name: existing.name })))) return
+  saving.value = true
+  errors.save = undefined
+  try {
+    await store.deleteService(existing.id)
+    haptic.success()
+    back()
+  } catch {
+    errors.save = t('common.error')
+    haptic.error()
+  } finally {
+    saving.value = false
+  }
+}
+
 async function save() {
   const duration = durationPick.value === CUSTOM ? Number(customDuration.value) : durationPick.value
   const price = form.price === '' ? 0 : Number(form.price)
@@ -162,6 +195,14 @@ async function save() {
 <style scoped lang="scss">
 // место под ряд подсказок: подпись + ряд кнопок. У вида без подсказок («Другое») остаётся пустым
 .presets { min-height: calc(var(--control-height) + var(--space-md)); }
+
+.delete { color: var(--danger-500); }
+
+.not-found {
+  align-items: center;
+
+  h2, p { margin: 0; }
+}
 
 .error {
   margin: 0;

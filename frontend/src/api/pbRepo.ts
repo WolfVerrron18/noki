@@ -93,7 +93,7 @@ export const pbRepo: Repo = {
 
   async listServices(masterId) {
     const list = await pb.collection('services').getFullList({
-      filter: pb.filter('master = {:m}', { m: masterId }),
+      filter: pb.filter('master = {:m} && archived != true', { m: masterId }),
       sort: 'sort,created',
     })
     return list.map(toService)
@@ -110,13 +110,17 @@ export const pbRepo: Repo = {
     return toService(await pb.collection('services').update(id, data))
   },
 
+  async deleteService(id) {
+    await pb.collection('services').update(id, { archived: true })
+  },
+
   async reorderServices(ids) {
     await Promise.all(ids.map((id, sort) => pb.collection('services').update(id, { sort })))
   },
 
   async listActiveServices(masterId) {
     const list = await pb.collection('services').getFullList({
-      filter: pb.filter('master = {:m} && is_active = true', { m: masterId }),
+      filter: pb.filter('master = {:m} && is_active = true && archived != true', { m: masterId }),
       sort: 'sort,created',
     })
     return list.map(toService)

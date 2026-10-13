@@ -41,6 +41,7 @@
         <NokiSwitch :model-value="s.is_active" :label="t('services.visible')" class="switch" @update:model-value="toggle(s, !!$event)" />
       </li>
     </ul>
+    <p v-if="toggleError" class="error">{{ toggleError }}</p>
 
     <NokiButton @click="router.push({ name: 'master-service-new' })">{{ t('services.add') }}</NokiButton>
   </div>
@@ -97,9 +98,17 @@ watch(listEl, (el) => {
   if (el) sortable.start(el)
 })
 
+/** Не удалось сохранить видимость — показываем под списком */
+const toggleError = ref('')
+
 async function toggle(s: Service, on: boolean) {
-  const { id, master: _m, ...data } = s
-  await store.saveService({ ...data, is_active: on }, id)
+  toggleError.value = ''
+  try {
+    await store.setServiceActive(s.id, on)
+  } catch {
+    toggleError.value = t('common.error')
+    haptic.error()
+  }
 }
 </script>
 
@@ -181,5 +190,11 @@ async function toggle(s: Service, on: boolean) {
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger-500);
+  font-size: var(--font-size-sm);
 }
 </style>

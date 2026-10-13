@@ -56,6 +56,31 @@ export const useMaster = defineStore('master', () => {
   }
 
   /**
+   * Показать или скрыть услугу. Тумблер переключается сразу, при ошибке — возвращается.
+   * @param id id услуги
+   * @param on показывать клиенткам
+   */
+  async function setServiceActive(id: string, on: boolean) {
+    const before = services.value
+    services.value = before.map((s) => (s.id === id ? { ...s, is_active: on } : s))
+    try {
+      await repo().updateService(id, { is_active: on })
+    } catch (e) {
+      services.value = before
+      throw e
+    }
+  }
+
+  /**
+   * Удалить услугу (мягко: записи на неё остаются).
+   * @param id id услуги
+   */
+  async function deleteService(id: string) {
+    await repo().deleteService(id)
+    services.value = services.value.filter((s) => s.id !== id)
+  }
+
+  /**
    * Перенести услугу на другое место. Список меняется сразу, при ошибке — откатывается.
    * @param from текущий индекс
    * @param to новый индекс
@@ -74,5 +99,5 @@ export const useMaster = defineStore('master', () => {
     }
   }
 
-  return { master, services, load, saveProfile, saveAppearance, themePreview, isSlugFree, saveService, moveService }
+  return { master, services, load, saveProfile, saveAppearance, themePreview, isSlugFree, saveService, setServiceActive, deleteService, moveService }
 })

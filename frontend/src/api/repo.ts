@@ -60,6 +60,12 @@ export interface Repo {
   updateService(id: string, data: Partial<ServiceInput>): Promise<Service>
 
   /**
+   * Удалить услугу. Удаление мягкое: на услугу могут ссылаться записи, поэтому она только пропадает из списков.
+   * @param id id услуги
+   */
+  deleteService(id: string): Promise<void>
+
+  /**
    * Задать порядок услуг: sort = место в списке.
    * @param ids id услуг мастера в новом порядке
    */

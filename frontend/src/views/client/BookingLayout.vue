@@ -28,6 +28,7 @@ import NokiMascot from '@/components/mascot/NokiMascot.vue'
 import NokiButton from '@/components/ui/NokiButton.vue'
 import { NOKI_LOOK_KEY } from '@/components/mascot/look'
 import { useBooking } from '@/stores/booking'
+import { useMaster } from '@/stores/master'
 
 /** Пропсы BookingLayout */
 interface Props {
@@ -41,6 +42,7 @@ type State = 'loading' | 'ready' | 'notFound' | 'error'
 const props = defineProps<Props>()
 const { t } = useI18n()
 const store = useBooking()
+const own = useMaster()
 const state = ref<State>('loading')
 
 provide(NOKI_LOOK_KEY, computed(() => store.master?.mascot))
@@ -52,7 +54,8 @@ provide(NOKI_LOOK_KEY, computed(() => store.master?.mascot))
 async function load(slug: string) {
   state.value = 'loading'
   try {
-    await store.load(slug)
+    // свой кабинет тоже: если мастер открыла свою же ссылку, страница это покажет. Ошибка тут не мешает записи
+    await Promise.all([store.load(slug), own.load().catch(() => undefined)])
     state.value = store.master ? 'ready' : 'notFound'
   } catch {
     state.value = 'error'
