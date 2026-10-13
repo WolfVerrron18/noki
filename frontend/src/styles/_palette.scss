@@ -8,16 +8,50 @@
 //   500     — базовый цвет
 //   600–900 — темнее базы, 900 — самый насыщенный/тёмный
 //
-// Новые цвета добавлять только сюда, в $bases.
+// Новые цвета добавлять только сюда.
 
-$bases: (
-  'primary': #f2669c,   // основной акцент (розовый)
-  'secondary': #9b7bff, // второй акцент (лаванда)
-  'cute': #ffb08a,      // декоративный (персик): маскот, иллюстрации
+// Общие для всех тем цвета состояний
+$status: (
   'success': #2fbf8a,
   'warning': #f5a524,
   'danger': #e5484d,
 );
+
+// Цветовые темы мастера: акценты меняются, смысл остаётся. Первая — тема по умолчанию.
+// Новая тема: строка здесь → значение в EnumPalette (styles/palettes.ts) → перевод theme.palette.<id>.
+// 500 каждого акцента должен читаться с белым текстом (кнопки, MainButton Telegram).
+$palettes: (
+  'rose': (
+    'primary': #f2669c,   // розовый
+    'secondary': #9b7bff, // лаванда
+    'cute': #ffb08a,      // персик: маскот, иллюстрации
+  ),
+  'lavender': (
+    'primary': #9275ee,
+    'secondary': #ea6aa6,
+    'cute': #ffb08a,
+  ),
+  'mint': (
+    'primary': #2aa68b,
+    'secondary': #8f7cf0,
+    'cute': #ffb08a,
+  ),
+  'peach': (
+    'primary': #e9734a,
+    'secondary': #e9649b,
+    'cute': #ffc46b,
+  ),
+  'sky': (
+    'primary': #4f9ae8,
+    'secondary': #9b7bff,
+    'cute': #ffb08a,
+  ),
+);
+
+$default-palette: 'rose';
+
+// Совместимость: базовые акценты темы по умолчанию + цвета состояний
+$bases: map.merge(map.get($palettes, $default-palette), $status);
 
 $alpha-steps: (100: 0.1, 200: 0.2, 300: 0.35);
 $shade-steps: (600: 12%, 700: 24%, 800: 36%, 900: 48%);
@@ -64,4 +98,17 @@ $neutral-dark: (
   @each $step, $value in $scale {
     --#{$name}-#{$step}: #{$value};
   }
+}
+
+// Нейтральные тона подстраиваются под тему: те же выверенные значения, повёрнутые к оттенку primary.
+// У темы по умолчанию поворот нулевой — её нейтральные цвета не меняются.
+@function tinted-neutral($scale, $primary) {
+  $base-hue: color.channel(map.get(map.get($palettes, $default-palette), 'primary'), 'hue', $space: hsl);
+  $delta: color.channel($primary, 'hue', $space: hsl) - $base-hue;
+  @if $delta == 0 { @return $scale; }
+  $out: ();
+  @each $step, $value in $scale {
+    $out: map.merge($out, ($step: color.adjust($value, $hue: $delta, $space: hsl)));
+  }
+  @return $out;
 }

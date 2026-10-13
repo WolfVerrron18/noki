@@ -69,6 +69,7 @@ import NokiCard from '@/components/ui/NokiCard.vue'
 import { useMaster } from '@/stores/master'
 import { useShareLink } from '@/composables/useShareLink'
 import { DEFAULT_LOOK, EnumMascotHead, type NokiLook } from '@/components/mascot/look'
+import { DEFAULT_PALETTE } from '@/styles/palettes'
 
 /** Пример наряда для карточки-приглашения в конструктор */
 const TEASER_LOOK: NokiLook = { ...DEFAULT_LOOK, head: EnumMascotHead.FlowerCrown }
@@ -79,7 +80,10 @@ const store = useMaster()
 const { bookingLink, copy, share } = useShareLink()
 
 const master = computed(() => store.master!)
-const isDefaultLook = computed(() => JSON.stringify(master.value.mascot) === JSON.stringify(DEFAULT_LOOK))
+// пока оформление не трогали — зовём оформить страницу
+const isDefaultLook = computed(
+  () => JSON.stringify(master.value.mascot) === JSON.stringify(DEFAULT_LOOK) && master.value.theme === DEFAULT_PALETTE,
+)
 const activeCount = computed(() => store.services.filter((s) => s.is_active).length)
 const toast = ref('')
 const noki = ref<NokiMascotExpose | null>(null)

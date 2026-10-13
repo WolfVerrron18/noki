@@ -10,6 +10,29 @@
       <p class="hint center">{{ t('mascot.editor.subtitle') }}</p>
     </div>
 
+    <section class="section">
+      <h2>{{ t('mascot.editor.colorTitle') }}</h2>
+      <div class="palettes" role="radiogroup">
+        <button
+          v-for="p in PALETTES"
+          :key="p"
+          v-press="{ depth: 0.1 }"
+          v-pop="theme === p"
+          type="button"
+          role="radio"
+          class="palette"
+          :class="{ active: theme === p }"
+          :data-palette="p"
+          :aria-checked="theme === p"
+          @click="pickTheme(p)"
+        >
+          <span class="swatch" aria-hidden="true" />
+          <span>{{ t(`theme.palette.${p}`) }}</span>
+        </button>
+      </div>
+    </section>
+
+    <h2>{{ t('mascot.editor.headTitle') }}</h2>
     <div ref="optionsEl" class="options">
       <button
         v-for="o in options"
@@ -35,7 +58,7 @@
 <script setup lang="ts">
 // Конструктор Ноки: мастер выбирает наряд, его видят клиентки.
 // Пока в Rive есть только головные уборы; остальные слои внешности появятся, когда их нарисуем.
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import NokiMascot, { type NokiMascotExpose } from '@/components/mascot/NokiMascot.vue'
@@ -48,6 +71,7 @@ import { DEFAULT_LOOK, EnumMascotHead, type NokiLook } from '@/components/mascot
 import { MASCOT_HEAD } from '@/components/mascot/registry'
 import { EnumNokiReaction } from '@/components/mascot/rive/character'
 import type { SelectOption } from '@/components/ui/types'
+import { DEFAULT_PALETTE, PALETTES, type EnumPalette } from '@/styles/palettes'
 import { useMaster } from '@/stores/master'
 import { haptic } from '@/telegram'
 
@@ -56,6 +80,7 @@ const router = useRouter()
 const store = useMaster()
 
 const draft = ref<NokiLook>({ ...(store.master?.mascot ?? DEFAULT_LOOK) })
+const theme = ref<EnumPalette>(store.master?.theme ?? DEFAULT_PALETTE)
 const saving = ref(false)
 const justSaved = ref(false)
 const error = ref('')
@@ -78,6 +103,20 @@ function pick(head: EnumMascotHead | null) {
   noki.value?.react(EnumNokiReaction.Admire)
 }
 
+
+/**
+ * Примерить тему: всё приложение сразу перекрашивается, сохранится по главной кнопке.
+ * @param p тема
+ */
+function pickTheme(p: EnumPalette) {
+  haptic.tap()
+  theme.value = p
+  store.themePreview = p
+  justSaved.value = false
+}
+
+// ушла без сохранения — возвращаем сохранённую тему
+onBeforeUnmount(() => (store.themePreview = null))
 function shuffle() {
   const heads = Object.values(EnumMascotHead).filter((h) => h !== draft.value.head)
   pick(heads[Math.floor(Math.random() * heads.length)])
@@ -87,7 +126,7 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    await store.saveMascot(draft.value)
+    await store.saveAppearance({ mascot: draft.value, theme: theme.value })
     haptic.success()
     justSaved.value = true
     savedCount.value++
@@ -115,6 +154,48 @@ function back() {
 }
 
 .burst { position: relative; }
+
+h2 { margin: 0; font-size: var(--font-size-md); }
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.palettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--control-height) * 1.4), 1fr));
+  gap: var(--space-sm);
+}
+
+// образец темы: data-palette на кнопке даёт ей цвета своей темы
+.palette {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-xs);
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &.active { border-color: var(--primary-500); }
+}
+
+.swatch {
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: 50%;
+  background: conic-gradient(from 200deg, var(--primary-500) 0 50%, var(--secondary-500) 0 75%, var(--cute-500) 0);
+}
 
 .options {
   display: grid;

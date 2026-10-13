@@ -1,3 +1,4 @@
+@use 'sass:map';
 @use 'palette' as p;
 
 // Тема: шкалы цветов + семантические алиасы, светлая и тёмная.
@@ -38,5 +39,24 @@
     --overlay: rgba(0, 0, 0, 0.55);
 
     color-scheme: dark;
+  }
+
+  // Цветовые темы мастера: data-palette на <html> (вся страница) или на любом элементе (образец цвета в выборе темы)
+  @each $id, $accents in p.$palettes {
+    [data-palette='#{$id}'] {
+      @each $name, $base in $accents {
+        @include p.emit-scale($name, p.scale($base));
+        --#{$name}-on-soft: var(--#{$name}-700);
+      }
+      @include p.emit-scale('neutral', p.tinted-neutral(p.$neutral-light, map.get($accents, 'primary')));
+    }
+
+    [data-theme='dark'][data-palette='#{$id}'],
+    [data-theme='dark'] [data-palette='#{$id}'] {
+      @each $name, $base in $accents {
+        --#{$name}-on-soft: var(--#{$name}-400);
+      }
+      @include p.emit-scale('neutral', p.tinted-neutral(p.$neutral-dark, map.get($accents, 'primary')));
+    }
   }
 }

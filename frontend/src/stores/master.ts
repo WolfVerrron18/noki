@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { repo } from '@/api/repo'
 import type { Master, MasterInput, Service, ServiceInput } from '@/api/types'
 import { useAuth } from '@/stores/auth'
-import type { NokiLook } from '@/components/mascot/look'
+import type { EnumPalette } from '@/styles/palettes'
 
 export const useMaster = defineStore('master', () => {
   const master = ref<Master | null>(null)
@@ -29,10 +29,16 @@ export const useMaster = defineStore('master', () => {
       : await repo().createMaster(userId(), data)
   }
 
-  /** Сохранить внешность Ноки из конструктора */
-  async function saveMascot(look: NokiLook) {
+  /** Тема, которую мастер сейчас примеряет в «Оформлении»: всё приложение уже в ней, но она ещё не сохранена */
+  const themePreview = ref<EnumPalette | null>(null)
+
+  /**
+   * Сохранить оформление: внешность Ноки и цветовую тему.
+   * @param data внешность и тема
+   */
+  async function saveAppearance(data: Pick<MasterInput, 'mascot' | 'theme'>) {
     if (!master.value) throw new Error('no master')
-    master.value = await repo().updateMaster(master.value.id, { mascot: look })
+    master.value = await repo().updateMaster(master.value.id, data)
   }
 
   function isSlugFree(slug: string) {
@@ -68,5 +74,5 @@ export const useMaster = defineStore('master', () => {
     }
   }
 
-  return { master, services, load, saveProfile, saveMascot, isSlugFree, saveService, moveService }
+  return { master, services, load, saveProfile, saveAppearance, themePreview, isSlugFree, saveService, moveService }
 })

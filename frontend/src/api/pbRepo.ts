@@ -4,6 +4,7 @@ import type { Repo } from '@/api/repo'
 import { normalizeSchedule, type Appointment, type Master, type Service } from '@/api/types'
 import { normalizeLook } from '@/components/mascot/look'
 import { normalizeCategory } from '@/components/services/category'
+import { normalizePalette } from '@/styles/palettes'
 
 const toMaster = (r: RecordModel): Master => ({
   id: r.id,
@@ -22,6 +23,7 @@ const toMaster = (r: RecordModel): Master => ({
   }),
   slot_step_min: r.slot_step_min,
   mascot: normalizeLook(r.mascot),
+  theme: normalizePalette(r.theme),
 })
 
 const toService = (r: RecordModel): Service => ({

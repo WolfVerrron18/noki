@@ -1,5 +1,6 @@
 import type { NokiLook } from '@/components/mascot/look'
 import type { EnumServiceCategory } from '@/components/services/category'
+import type { EnumPalette } from '@/styles/palettes'
 
 /** День недели по ISO: '1' — понедельник … '7' — воскресенье */
 export type Weekday = '1' | '2' | '3' | '4' | '5' | '6' | '7'
@@ -90,6 +91,8 @@ export interface Master {
   slot_step_min: 15 | 30
   /** Внешность Ноки из конструктора, её видят клиентки */
   mascot: NokiLook
+  /** Цветовая тема: в ней мастер видит кабинет, а клиентки — страницу записи */
+  theme: EnumPalette
 }
 
 /** Данные для создания или обновления профиля мастера */

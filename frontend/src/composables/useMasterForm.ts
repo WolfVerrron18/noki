@@ -12,6 +12,7 @@ import { deviceTimezone } from '@/utils/time'
 import { fromRanges, validateDayHours } from '@/utils/hours'
 import { timesFromRanges } from '@/utils/daySlots'
 import { todayIn } from '@/utils/slots'
+import { DEFAULT_PALETTE } from '@/styles/palettes'
 
 /** Ошибки формы — уже переведённые тексты */
 export interface MasterFormErrors {
@@ -49,6 +50,7 @@ export function useMasterForm() {
     timezone: existing?.timezone ?? deviceTimezone(),
     slot_step_min: existing?.slot_step_min ?? 30,
     mascot: existing?.mascot ?? { ...DEFAULT_LOOK },
+    theme: existing?.theme ?? DEFAULT_PALETTE,
     schedule_mode: existing?.schedule_mode ?? EnumScheduleMode.Weekly,
     work_hours: existing?.work_hours ?? DEFAULT_WORK_HOURS,
     day_overrides: existing?.day_overrides ?? {},

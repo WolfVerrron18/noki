@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { EnumScheduleMode, EnumSlotMode, type Master, type Service } from '@/api/types'
 import { DEFAULT_LOOK } from '@/components/mascot/look'
 import { EnumServiceCategory } from '@/components/services/category'
+import { EnumPalette } from '@/styles/palettes'
 import { freeSlots, isWorkDay, startsFor } from '@/utils/slots'
 
 // 2026-10-14 — среда (weekday '3'), Москва UTC+3
@@ -24,6 +25,7 @@ function master(patch: Partial<Master> = {}): Master {
     slot_templates: [],
     slot_step_min: 30,
     mascot: DEFAULT_LOOK,
+    theme: EnumPalette.Rose,
     ...patch,
   }
 }

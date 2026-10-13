@@ -14,6 +14,7 @@ import {
 import { freeSlots, MIN_LEAD_MIN, todayIn } from '@/utils/slots'
 import { normalizeLook } from '@/components/mascot/look'
 import { normalizeCategory } from '@/components/services/category'
+import { normalizePalette } from '@/styles/palettes'
 
 // Хранилище для режима просмотра без бэкенда. Только для разработки.
 const KEY = 'nidoki.mock.v1'
@@ -137,6 +138,7 @@ const strip = ({ user: _user, ...m }: Master & { user: string }): Master => ({
   ...m,
   ...normalizeSchedule(m),
   mascot: normalizeLook(m.mascot),
+  theme: normalizePalette(m.theme),
 })
 
 export const mockRepo: Repo = {

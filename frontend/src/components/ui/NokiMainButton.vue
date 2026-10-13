@@ -41,7 +41,11 @@ function cssColor(name: string): string | undefined {
 
 if (native) {
   const mb = tg!.MainButton
-  mb.setParams({ color: cssColor('--primary-500'), text_color: cssColor('--on-primary') })
+  const paint = () => mb.setParams({ color: cssColor('--primary-500'), text_color: cssColor('--on-primary') })
+  paint()
+  // цветовая тема мастера меняется на лету (выбор в «Оформлении», переход на страницу записи) — кнопка за ней
+  const themeObserver = new MutationObserver(paint)
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-palette', 'data-theme'] })
   mb.onClick(onClick)
   mb.show()
 
@@ -59,6 +63,7 @@ if (native) {
 
   onBeforeUnmount(() => {
     mb.offClick(onClick)
+    themeObserver.disconnect()
     mb.hideProgress()
     mb.hide()
   })

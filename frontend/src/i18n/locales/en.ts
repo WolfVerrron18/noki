@@ -16,13 +16,15 @@ const en: Messages = {
     label: 'Noki the kitten',
     none: 'None',
     editor: {
-      title: 'My Noki',
-      subtitle: 'Pick an outfit for Noki — your clients will see it',
+      title: 'Appearance',
+      subtitle: 'Colours and Noki’s outfit — this is how clients see your booking page',
+      colorTitle: 'Colour',
+      headTitle: 'Headwear',
       random: 'Random',
     },
     card: {
-      title: 'Build your Noki',
-      hint: 'Pick a hat for Noki — clients will see it on your booking page',
+      title: 'Style your page',
+      hint: 'Pick colours and an outfit for Noki — clients will see them on your booking page',
     },
     mood: { happy: 'Happy', wink: 'Winking', sleepy: 'Sleepy', thinking: 'Thinking', sad: 'Sad' },
     hat: {
@@ -40,6 +42,15 @@ const en: Messages = {
       sprout: 'Sprout',
       halo: 'Halo',
       topHat: 'Top hat',
+    },
+  },
+  theme: {
+    palette: {
+      rose: 'Rose',
+      lavender: 'Lavender',
+      mint: 'Mint',
+      peach: 'Peach',
+      sky: 'Sky',
     },
   },
   auth: {
@@ -117,7 +128,7 @@ const en: Messages = {
       schedule: 'Schedule',
       profile: 'Profile',
       hours: 'Working hours',
-      mascot: 'My Noki',
+      mascot: 'Appearance',
       feedback: 'Suggest an idea or report a bug',
     },
     noServicesWarning: 'Add at least one service so clients can book',
