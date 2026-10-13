@@ -38,6 +38,28 @@ export interface DayTemplate {
   ranges: TimeRange[]
 }
 
+/** Как клиентки выбирают время */
+export enum EnumSlotMode {
+  /** Свободная сетка: рабочие часы + шаг записи, начало — любое деление сетки */
+  Grid = 'grid',
+  /** Точное время: мастер сама задаёт времена начала записи (10:30, 12:30, …) */
+  Fixed = 'fixed',
+}
+
+/** Времена начала записи по дням недели, "HH:MM" по возрастанию. Нет ключа — выходной (режим Fixed) */
+export type WorkSlots = Partial<Record<Weekday, string[]>>
+
+/** Времена начала записи на конкретные даты "YYYY-MM-DD" (режим Fixed): рабочие дни в Dates, исключения в Weekly */
+export type SlotOverrides = Partial<Record<string, string[]>>
+
+/** Шаблон дня с точным временем, который мастер сохранила себе */
+export interface SlotTemplate {
+  /** id шаблона (локальный, для списка и удаления) */
+  id: string
+  /** Времена начала записи по возрастанию */
+  times: string[]
+}
+
 /** Профиль мастера */
 export interface Master {
   /** id записи в коллекции masters */
@@ -56,6 +78,14 @@ export interface Master {
   day_overrides: DayOverrides
   /** Свои шаблоны рабочего дня мастера */
   hour_templates: DayTemplate[]
+  /** Как клиентки выбирают время: сетка по часам или точные времена */
+  slot_mode: EnumSlotMode
+  /** Точные времена по дням недели (режим Fixed + Weekly) */
+  work_slots: WorkSlots
+  /** Точные времена на даты (режим Fixed): рабочие дни в Dates, исключения в Weekly */
+  slot_overrides: SlotOverrides
+  /** Свои шаблоны дня с точным временем */
+  slot_templates: SlotTemplate[]
   /** Шаг начала записи в минутах */
   slot_step_min: 15 | 30
   /** Внешность Ноки из конструктора, её видят клиентки */
@@ -173,15 +203,57 @@ export interface BookingInput {
   clientPhone: string
 }
 
+/** Сырые поля графика из базы */
+interface RawSchedule {
+  /** masters.schedule_mode */
+  schedule_mode?: unknown
+  /** masters.day_overrides */
+  day_overrides?: unknown
+  /** masters.hour_templates */
+  hour_templates?: unknown
+  /** masters.slot_mode */
+  slot_mode?: unknown
+  /** masters.work_slots */
+  work_slots?: unknown
+  /** masters.slot_overrides */
+  slot_overrides?: unknown
+  /** masters.slot_templates */
+  slot_templates?: unknown
+}
+
+/** Поля графика после проверки */
+type Schedule = Pick<Master, 'schedule_mode' | 'day_overrides' | 'hour_templates' | 'slot_mode' | 'work_slots' | 'slot_overrides' | 'slot_templates'>
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
+
 /**
- * Привести график из базы к типам: старые записи без режима — недельный график.
+ * Список времён "HH:MM": только верные, без повторов, по возрастанию.
+ * @param raw значение из базы
+ */
+function cleanTimes(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return [...new Set(raw.filter((v): v is string => typeof v === 'string' && TIME_RE.test(v)))].sort()
+}
+
+/**
+ * Словарь «ключ → времена» без пустых и неверных значений.
+ * @param raw значение из базы
+ */
+function cleanTimesMap(raw: unknown): Partial<Record<string, string[]>> {
+  if (!raw || typeof raw !== 'object') return {}
+  const out: Partial<Record<string, string[]>> = {}
+  for (const [k, v] of Object.entries(raw)) {
+    const times = cleanTimes(v)
+    if (times.length) out[k] = times
+  }
+  return out
+}
+
+/**
+ * Привести график из базы к типам: старые записи без режима — недельный график со свободной сеткой.
  * @param raw запись мастера
  */
-export function normalizeSchedule(raw: { schedule_mode?: unknown; day_overrides?: unknown; hour_templates?: unknown }): {
-  schedule_mode: EnumScheduleMode
-  day_overrides: DayOverrides
-  hour_templates: DayTemplate[]
-} {
+export function normalizeSchedule(raw: RawSchedule): Schedule {
   const mode = Object.values(EnumScheduleMode).includes(raw.schedule_mode as EnumScheduleMode)
     ? (raw.schedule_mode as EnumScheduleMode)
     : EnumScheduleMode.Weekly
@@ -189,5 +261,20 @@ export function normalizeSchedule(raw: { schedule_mode?: unknown; day_overrides?
   const templates = Array.isArray(raw.hour_templates)
     ? (raw.hour_templates as DayTemplate[]).filter((t) => t && typeof t.id === 'string' && Array.isArray(t.ranges) && t.ranges.length)
     : []
-  return { schedule_mode: mode, day_overrides: overrides, hour_templates: templates }
+  const slotMode = Object.values(EnumSlotMode).includes(raw.slot_mode as EnumSlotMode) ? (raw.slot_mode as EnumSlotMode) : EnumSlotMode.Grid
+  const slotTemplates = Array.isArray(raw.slot_templates)
+    ? (raw.slot_templates as SlotTemplate[])
+        .filter((t) => t && typeof t.id === 'string')
+        .map((t) => ({ id: t.id, times: cleanTimes(t.times) }))
+        .filter((t) => t.times.length)
+    : []
+  return {
+    schedule_mode: mode,
+    day_overrides: overrides,
+    hour_templates: templates,
+    slot_mode: slotMode,
+    work_slots: cleanTimesMap(raw.work_slots) as WorkSlots,
+    slot_overrides: cleanTimesMap(raw.slot_overrides),
+    slot_templates: slotTemplates,
+  }
 }

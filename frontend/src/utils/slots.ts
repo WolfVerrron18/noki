@@ -1,7 +1,7 @@
 // Расчёт свободных слотов. Тот же алгоритм будет на сервере (pb_hooks),
 // где запись окончательно проверяется на пересечения.
 
-import { EnumScheduleMode, type Master, type Service, type TimeRange, type Weekday } from '@/api/types'
+import { EnumScheduleMode, EnumSlotMode, type Master, type Service, type TimeRange, type Weekday } from '@/api/types'
 import dayjs from '@/utils/date'
 import { toMinutes } from '@/utils/time'
 
@@ -54,7 +54,7 @@ export function weekdayOf(date: string): Weekday {
 }
 
 /** Часть мастера, нужная для расчёта рабочих часов */
-export type ScheduleSource = Pick<Master, 'schedule_mode' | 'work_hours' | 'day_overrides'>
+export type ScheduleSource = Pick<Master, 'schedule_mode' | 'work_hours' | 'day_overrides' | 'slot_mode' | 'work_slots' | 'slot_overrides'>
 
 /**
  * Рабочие интервалы мастера на день: отметка на дату важнее шаблона;
@@ -69,12 +69,24 @@ export function rangesFor(master: ScheduleSource, date: string): TimeRange[] {
 }
 
 /**
- * Рабочий ли день.
+ * Точные времена начала записи на день (режим Fixed): отметка на дату важнее шаблона;
+ * в режиме «по датам» без отметки — выходной.
+ * @param master график мастера
+ * @param date день "YYYY-MM-DD"
+ */
+export function startsFor(master: ScheduleSource, date: string): string[] {
+  const override = master.slot_overrides[date]
+  if (override) return override
+  return master.schedule_mode === EnumScheduleMode.Dates ? [] : (master.work_slots[weekdayOf(date)] ?? [])
+}
+
+/**
+ * Рабочий ли день — по часам или по точным временам, смотря как мастер принимает запись.
  * @param master график мастера
  * @param date день "YYYY-MM-DD"
  */
 export function isWorkDay(master: ScheduleSource, date: string): boolean {
-  return rangesFor(master, date).length > 0
+  return master.slot_mode === EnumSlotMode.Fixed ? startsFor(master, date).length > 0 : rangesFor(master, date).length > 0
 }
 
 /**
@@ -108,7 +120,8 @@ export interface FreeSlotsOptions {
 }
 
 /**
- * Свободные начала записи на день: рабочие часы минус занятые интервалы с учётом длительности услуги.
+ * Свободные начала записи на день: рабочие часы (или точные времена мастера) минус занятые интервалы
+ * с учётом длительности услуги.
  * @param master мастер (пояс, рабочие часы, шаг)
  * @param service услуга (длительность)
  * @param date день "YYYY-MM-DD" в поясе мастера
@@ -122,6 +135,16 @@ export function freeSlots(master: Master, service: Service, date: string, busy: 
   const duration = service.duration_min * 60000
   const minGap = minServiceMin * 60000
   const busyMs = busy.map((b) => [Date.parse(b.start_at), Date.parse(b.end_at)] as const)
+
+  // точное время: начала задала мастер, остаются те, что не прошли и не пересекаются с записями.
+  // Фильтр пустых окон не нужен — между точными временами окна мастер выбрала сама
+  if (master.slot_mode === EnumSlotMode.Fixed) {
+    return startsFor(master, date)
+      .map((hhmm) => localMs(date, toMinutes(hhmm), master.timezone))
+      .filter((s) => s >= cutoff && !busyMs.some(([bs, be]) => s < be && bs < s + duration))
+      .map((ms) => new Date(ms).toISOString())
+  }
+
   // потерянные минуты: окно, куда не влезет даже самая короткая услуга
   const dead = (gap: number) => (gap > 0 && gap < minGap ? gap : 0)
   const result: number[] = []

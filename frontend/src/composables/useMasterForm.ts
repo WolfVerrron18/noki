@@ -2,7 +2,7 @@
 // Каждый экран показывает свою часть полей, сохраняется всегда весь профиль.
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { EnumScheduleMode, WEEKDAYS, type MasterInput, type Weekday } from '@/api/types'
+import { EnumScheduleMode, EnumSlotMode, WEEKDAYS, type MasterInput, type Weekday } from '@/api/types'
 import { DEFAULT_LOOK } from '@/components/mascot/look'
 import { useAuth } from '@/stores/auth'
 import { useMaster } from '@/stores/master'
@@ -10,6 +10,7 @@ import { useShareLink } from '@/composables/useShareLink'
 import { slugify, sanitizeSlug, SLUG_RE } from '@/utils/slug'
 import { deviceTimezone } from '@/utils/time'
 import { fromRanges, validateDayHours } from '@/utils/hours'
+import { timesFromRanges } from '@/utils/daySlots'
 import { todayIn } from '@/utils/slots'
 
 /** Ошибки формы — уже переведённые тексты */
@@ -52,6 +53,10 @@ export function useMasterForm() {
     work_hours: existing?.work_hours ?? DEFAULT_WORK_HOURS,
     day_overrides: existing?.day_overrides ?? {},
     hour_templates: existing?.hour_templates ?? [],
+    slot_mode: existing?.slot_mode ?? EnumSlotMode.Grid,
+    work_slots: existing?.work_slots ?? {},
+    slot_overrides: existing?.slot_overrides ?? {},
+    slot_templates: existing?.slot_templates ?? [],
   })
   const errors = reactive<MasterFormErrors>({})
   /** Дни недели с ошибкой в часах — редактор подсвечивает их */
@@ -62,6 +67,25 @@ export function useMasterForm() {
   const sheetOpen = ref(false)
   /** Выбор дней в календаре идёт прямо сейчас — главная кнопка становится «Задать часы · N» */
   const pickingDays = computed(() => form.schedule_mode === EnumScheduleMode.Dates && selectedDays.value > 0)
+
+  // Первый переход на точное время: времена ещё пустые — заполняем их по рабочим часам, чтобы не начинать с одних выходных
+  watch(() => form.slot_mode, (mode) => {
+    if (mode !== EnumSlotMode.Fixed) return
+    const empty = !Object.keys(form.work_slots).length && !Object.keys(form.slot_overrides).length
+    if (!empty) return
+    const weekly: MasterInput['work_slots'] = {}
+    for (const d of WEEKDAYS) {
+      const times = timesFromRanges(form.work_hours[d])
+      if (times.length) weekly[d] = times
+    }
+    const dates: MasterInput['slot_overrides'] = {}
+    for (const [date, ranges] of Object.entries(form.day_overrides)) {
+      const times = timesFromRanges(ranges)
+      if (times.length) dates[date] = times
+    }
+    form.work_slots = weekly
+    form.slot_overrides = dates
+  })
   const saving = ref(false)
 
   // Пока адрес не трогали руками — он следует за именем
@@ -112,11 +136,19 @@ export function useMasterForm() {
    * @returns всё ли в порядке
    */
   function validateHours(): boolean {
+    const fixed = form.slot_mode === EnumSlotMode.Fixed
     if (form.schedule_mode === EnumScheduleMode.Dates) {
       // часы каждой даты проверяет календарь при применении; здесь — что есть хоть один будущий рабочий день
       const today = todayIn(form.timezone)
-      const hasFuture = Object.entries(form.day_overrides).some(([date, r]) => date >= today && r?.length)
+      const dates = fixed ? form.slot_overrides : form.day_overrides
+      const hasFuture = Object.entries(dates).some(([date, r]) => date >= today && r?.length)
       errors.hours = hasFuture ? undefined : t('scheduleEditor.empty')
+      return !errors.hours
+    }
+    if (fixed) {
+      // времена всегда верные (редактор не даёт дублей), нужен хоть один рабочий день
+      invalidDays.value = []
+      errors.hours = WEEKDAYS.some((d) => form.work_slots[d]?.length) ? undefined : t('onboarding.hours.empty')
       return !errors.hours
     }
     const days = WEEKDAYS.filter((d) => form.work_hours[d]?.length)
@@ -140,6 +172,7 @@ export function useMasterForm() {
         // в недельном режиме отметки на даты — исключения из шаблона; экрана для них пока нет,
         // поэтому даты, оставшиеся от режима «по датам», не должны молча перекрывать шаблон
         day_overrides: form.schedule_mode === EnumScheduleMode.Weekly ? {} : form.day_overrides,
+        slot_overrides: form.schedule_mode === EnumScheduleMode.Weekly ? {} : form.slot_overrides,
       })
       return true
     } catch {

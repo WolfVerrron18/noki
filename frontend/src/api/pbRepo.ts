@@ -11,7 +11,15 @@ const toMaster = (r: RecordModel): Master => ({
   slug: r.slug,
   timezone: r.timezone,
   work_hours: r.work_hours ?? {},
-  ...normalizeSchedule({ schedule_mode: r.schedule_mode, day_overrides: r.day_overrides, hour_templates: r.hour_templates }),
+  ...normalizeSchedule({
+    schedule_mode: r.schedule_mode,
+    day_overrides: r.day_overrides,
+    hour_templates: r.hour_templates,
+    slot_mode: r.slot_mode,
+    work_slots: r.work_slots,
+    slot_overrides: r.slot_overrides,
+    slot_templates: r.slot_templates,
+  }),
   slot_step_min: r.slot_step_min,
   mascot: normalizeLook(r.mascot),
 })

@@ -27,6 +27,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import HoursFields from '@/components/master/HoursFields.vue'
 import { useMasterForm } from '@/composables/useMasterForm'
 import { haptic } from '@/telegram'
+import { EnumSlotMode } from '@/api/types'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -34,7 +35,7 @@ const ctx = useMasterForm()
 const hoursFields = ref<InstanceType<typeof HoursFields> | null>(null)
 
 const mainText = computed(() =>
-  ctx.pickingDays.value ? t('scheduleEditor.setHours', { n: ctx.selectedDays.value }) : t('common.save'),
+  ctx.pickingDays.value ? t(ctx.form.slot_mode === EnumSlotMode.Fixed ? 'scheduleEditor.setTimes' : 'scheduleEditor.setHours', { n: ctx.selectedDays.value }) : t('common.save'),
 )
 
 async function onMain() {

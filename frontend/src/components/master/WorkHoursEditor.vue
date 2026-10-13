@@ -10,10 +10,10 @@
     </div>
 
     <ul class="days">
-      <li v-for="d in WEEKDAYS" :key="d" :class="{ off: !hoursOf(d), invalid: invalidDays?.includes(d) || !!errorOf(d) }">
+      <li v-for="d in WEEKDAYS" :key="d" :class="{ off: !isOn(d), invalid: invalidDays?.includes(d) || !!errorOf(d) }">
         <div class="main">
-          <NokiSwitch :model-value="!!hoursOf(d)" :label="t(`weekday.short.${d}`)" @update:model-value="setDay(d, !!$event)" />
-          <div v-if="hoursOf(d)" class="times">
+          <NokiSwitch :model-value="isOn(d)" :label="t(`weekday.short.${d}`)" @update:model-value="setDay(d, !!$event)" />
+          <div v-if="!fixed && hoursOf(d)" class="times">
             <NokiTimePicker
               :model-value="hoursOf(d)!.from"
               :label="t('hours.start')"
@@ -30,11 +30,13 @@
               @update:model-value="patch(d, { to: $event })"
             />
           </div>
-          <span v-else class="hint">{{ t('onboarding.hours.dayOff') }}</span>
+          <span v-else-if="!isOn(d)" class="hint">{{ t('onboarding.hours.dayOff') }}</span>
         </div>
 
+        <!-- точное время: список времён начала записи -->
+        <DaySlotsForm v-if="fixed && isOn(d)" :model-value="slots[d]!" @update:model-value="writeTimes(d, $event)" />
         <!-- перерывы: сколько угодно -->
-        <PauseList v-if="hoursOf(d)" :model-value="hoursOf(d)!" @update:model-value="write(d, $event)" />
+        <PauseList v-else-if="!fixed && hoursOf(d)" :model-value="hoursOf(d)!" @update:model-value="write(d, $event)" />
         <p v-if="errorOf(d)" class="error">{{ t(errorOf(d)!) }}</p>
       </li>
     </ul>
@@ -42,24 +44,30 @@
 </template>
 
 <script setup lang="ts">
-// Недельный шаблон: у каждого дня недели свои часы и необязательный перерыв
+// Недельный шаблон: у каждого дня недели свои часы с перерывами, а в режиме точного времени — свой список времён
 import { useI18n } from 'vue-i18n'
-import { WEEKDAYS, type Weekday, type WorkHours } from '@/api/types'
+import { WEEKDAYS, type Weekday, type WorkHours, type WorkSlots } from '@/api/types'
 import NokiSwitch from '@/components/ui/NokiSwitch.vue'
+import DaySlotsForm from '@/components/master/DaySlotsForm.vue'
 import PauseList from '@/components/master/PauseList.vue'
 import NokiTimePicker from '@/components/ui/NokiTimePicker.vue'
 import { allowedTime, DEFAULT_HOURS, fromRanges, toRanges, validateDayHours, type DayHours, type DayHoursError } from '@/utils/hours'
+import { DEFAULT_TIMES } from '@/utils/daySlots'
 import { haptic } from '@/telegram'
 
 /** Пропсы WorkHoursEditor */
 interface Props {
   /** Дни, которые подсветить как ошибочные (конец раньше начала, перерыв вне дня) */
   invalidDays?: Weekday[]
+  /** Режим точного времени: редактируются времена записи (v-model:slots), а не часы */
+  fixed?: boolean
 }
 
 /** Рабочие часы по дням недели */
 const model = defineModel<WorkHours>({ required: true })
-defineProps<Props>()
+/** Точные времена записи по дням недели (режим fixed) */
+const slots = defineModel<WorkSlots>('slots', { default: () => ({}) })
+const props = defineProps<Props>()
 const { t } = useI18n()
 
 /**
@@ -71,10 +79,19 @@ function hoursOf(d: Weekday): DayHours | null {
 }
 
 /**
- * Что не так с часами дня (ключ i18n) или null.
+ * Рабочий ли день в текущем режиме.
+ * @param d день недели
+ */
+function isOn(d: Weekday): boolean {
+  return props.fixed ? !!slots.value[d]?.length : !!hoursOf(d)
+}
+
+/**
+ * Что не так с часами дня (ключ i18n) или null. Точные времена всегда верные: дубли и порядок правит редактор.
  * @param d день недели
  */
 function errorOf(d: Weekday): DayHoursError {
+  if (props.fixed) return null
   const h = hoursOf(d)
   return h ? validateDayHours(h) : null
 }
@@ -86,6 +103,18 @@ function write(d: Weekday, h: DayHours | null) {
   model.value = next
 }
 
+/**
+ * Записать времена дня; пустой список — выходной.
+ * @param d день недели
+ * @param times времена
+ */
+function writeTimes(d: Weekday, times: string[]) {
+  const next = { ...slots.value }
+  if (times.length) next[d] = times
+  else delete next[d]
+  slots.value = next
+}
+
 /** Новый рабочий день берёт часы (и перерыв) первого уже включённого дня */
 function firstHours(): DayHours {
   for (const d of WEEKDAYS) {
@@ -95,8 +124,18 @@ function firstHours(): DayHours {
   return DEFAULT_HOURS
 }
 
+/** Новый рабочий день берёт времена первого уже включённого дня */
+function firstTimes(): string[] {
+  for (const d of WEEKDAYS) {
+    const times = slots.value[d]
+    if (times?.length) return times
+  }
+  return DEFAULT_TIMES
+}
+
 function setDay(d: Weekday, on: boolean) {
-  write(d, on ? { ...firstHours() } : null)
+  if (props.fixed) writeTimes(d, on ? [...firstTimes()] : [])
+  else write(d, on ? { ...firstHours() } : null)
 }
 
 /**
@@ -111,6 +150,13 @@ function patch(d: Weekday, part: Partial<DayHours>) {
 
 function preset(days: Weekday[]) {
   haptic.tap()
+  if (props.fixed) {
+    const times = firstTimes()
+    const next: WorkSlots = {}
+    for (const d of days) next[d] = [...times]
+    slots.value = next
+    return
+  }
   const h = firstHours()
   const next: WorkHours = {}
   for (const d of days) next[d] = toRanges(h)

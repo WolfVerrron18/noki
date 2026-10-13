@@ -38,6 +38,7 @@ import ProfileFields from '@/components/master/ProfileFields.vue'
 import HoursFields from '@/components/master/HoursFields.vue'
 import { useMasterForm } from '@/composables/useMasterForm'
 import { haptic } from '@/telegram'
+import { EnumSlotMode } from '@/api/types'
 
 const TOTAL = 2
 const { t } = useI18n()
@@ -51,7 +52,7 @@ const title = computed(() => (step.value === 1 ? t('onboarding.profile.title') :
 
 const mainText = computed(() => {
   if (step.value === 1) return t('common.next')
-  if (ctx.pickingDays.value) return t('scheduleEditor.setHours', { n: ctx.selectedDays.value })
+  if (ctx.pickingDays.value) return t(ctx.form.slot_mode === EnumSlotMode.Fixed ? 'scheduleEditor.setTimes' : 'scheduleEditor.setHours', { n: ctx.selectedDays.value })
   return t('onboarding.hours.finish')
 })
 

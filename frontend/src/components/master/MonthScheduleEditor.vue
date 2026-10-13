@@ -8,7 +8,7 @@
       drag-select
       :timezone="timezone"
       :selected="selected"
-      :tone-of="(d) => (model[d]?.length ? 'work' : undefined)"
+      :tone-of="(d) => (isWork(d) ? 'work' : undefined)"
       @pick="toggle"
       @paint="paint"
     >
@@ -16,7 +16,7 @@
         <button ref="helpBtn" v-press="{ depth: 0.15 }" type="button" class="help" :aria-label="t('scheduleEditor.help')" @click="hint.show()">?</button>
       </template>
       <template #day="{ date }">
-        <span v-if="model[date]?.length" class="hours">{{ cellLabel(model[date]!) }}</span>
+        <span v-if="isWork(date)" class="hours">{{ cellLabel(date) }}</span>
       </template>
     </NokiCalendar>
 
@@ -26,19 +26,22 @@
         <span>{{ t('scheduleEditor.selected', selected.size) }}</span>
         <button type="button" class="link" @click="clearSelection">{{ t('scheduleEditor.unselect') }}</button>
       </template>
-      <span v-else class="muted">{{ t('scheduleEditor.idle') }}</span>
+      <span v-else class="muted">{{ fixed ? t('scheduleEditor.idleTimes') : t('scheduleEditor.idle') }}</span>
     </div>
 
-    <NokiSheet v-model:open="sheetOpen" :title="t('scheduleEditor.sheetTitle', { dates: selectedTitle })">
+    <NokiSheet
+      v-model:open="sheetOpen"
+      :title="fixed ? t('scheduleEditor.sheetTitleTimes', { dates: selectedTitle }) : t('scheduleEditor.sheetTitle', { dates: selectedTitle })"
+    >
       <div class="stack">
-        <section v-if="templates.length" class="stack-sm">
+        <section v-if="chips.length" class="stack-sm">
           <h3>{{ t('scheduleEditor.templates') }}</h3>
           <div class="presets">
-            <span v-for="tpl in templates" :key="tpl.id" class="chip">
-              <button v-press="{ depth: 0.08 }" type="button" class="chip-main" @click="applyRanges(tpl.ranges)">
-                {{ templateLabel(tpl.ranges) }}
+            <span v-for="chip in chips" :key="chip.id" class="chip">
+              <button v-press="{ depth: 0.08 }" type="button" class="chip-main" @click="chip.apply()">
+                {{ chip.label }}
               </button>
-              <button type="button" class="chip-remove" :aria-label="t('scheduleEditor.removeTemplate')" @click="removeTemplate(tpl.id)">
+              <button type="button" class="chip-remove" :aria-label="t('scheduleEditor.removeTemplate')" @click="removeTemplate(chip.id)">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
               </button>
             </span>
@@ -47,13 +50,14 @@
         </section>
 
         <section class="stack-sm">
-          <h3>{{ templates.length ? t('scheduleEditor.custom') : t('scheduleEditor.hoursTitle') }}</h3>
-          <DayHoursForm v-model="draft" />
+          <h3>{{ chips.length ? t('scheduleEditor.custom') : fixed ? t('slots.title') : t('scheduleEditor.hoursTitle') }}</h3>
+          <DaySlotsForm v-if="fixed" v-model="draftTimes" />
+          <DayHoursForm v-else v-model="draft" />
           <NokiSwitch v-model="saveAsTemplate" :label="t('scheduleEditor.saveAsTemplate')" />
         </section>
 
-        <NokiButton variant="soft" @click="applyRanges([])">{{ t('scheduleEditor.makeDayOff') }}</NokiButton>
-        <NokiMainButton :text="t('scheduleEditor.applyTo', selected.size)" :disabled="!!draftError" @click="applyDraft" />
+        <NokiButton variant="soft" @click="applyDay([])">{{ t('scheduleEditor.makeDayOff') }}</NokiButton>
+        <NokiMainButton :text="t('scheduleEditor.applyTo', selected.size)" :disabled="!draftValid" @click="applyDraft" />
       </div>
     </NokiSheet>
   </div>
@@ -65,7 +69,7 @@
 // поэтому на экране всегда одна главная кнопка и ничего не сдвигается.
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { DayOverrides, DayTemplate, TimeRange } from '@/api/types'
+import type { DayOverrides, DayTemplate, SlotOverrides, SlotTemplate, TimeRange } from '@/api/types'
 import NokiButton from '@/components/ui/NokiButton.vue'
 import NokiCalendar from '@/components/ui/NokiCalendar.vue'
 import NokiMainButton from '@/components/ui/NokiMainButton.vue'
@@ -73,10 +77,12 @@ import NokiSegmented from '@/components/ui/NokiSegmented.vue'
 import NokiSheet from '@/components/ui/NokiSheet.vue'
 import NokiSwitch from '@/components/ui/NokiSwitch.vue'
 import DayHoursForm from '@/components/master/DayHoursForm.vue'
+import DaySlotsForm from '@/components/master/DaySlotsForm.vue'
 import { useHint } from '@/composables/useHint'
 import dayjs from '@/utils/date'
 import { DAY_FORMAT, todayIn } from '@/utils/slots'
 import { DEFAULT_HOURS, fromRanges, rangesKey, shortRange, toRanges, validateDayHours, type DayHours } from '@/utils/hours'
+import { DEFAULT_TIMES, timesCellLabel, timesKey, timesLabel } from '@/utils/daySlots'
 import type { SelectOption } from '@/components/ui/types'
 import { haptic } from '@/telegram'
 
@@ -84,6 +90,8 @@ import { haptic } from '@/telegram'
 interface Props {
   /** Пояс мастера: «сегодня» и прошедшие дни считаются в нём */
   timezone: string
+  /** Режим точного времени: дням задаются времена записи (v-model:slots), а не часы */
+  fixed?: boolean
 }
 
 const props = defineProps<Props>()
@@ -91,6 +99,10 @@ const props = defineProps<Props>()
 const model = defineModel<DayOverrides>({ required: true })
 /** Свои шаблоны дня мастера */
 const templates = defineModel<DayTemplate[]>('templates', { default: () => [] })
+/** Точные времена на даты (режим fixed); ключа нет — выходной */
+const slots = defineModel<SlotOverrides>('slots', { default: () => ({}) })
+/** Свои шаблоны дня с точным временем */
+const slotTemplates = defineModel<SlotTemplate[]>('slotTemplates', { default: () => [] })
 /** Сколько дней выбрано: родитель по нему меняет главную кнопку на «Задать часы · N» */
 const selectedCount = defineModel<number>('selectedCount', { default: 0 })
 /** Открыта ли шторка: родитель прячет свою главную кнопку — в шторке своя */
@@ -101,7 +113,9 @@ const { t, locale } = useI18n()
 const month = ref(todayIn(props.timezone).slice(0, 7))
 const selected = reactive(new Set<string>())
 const draft = ref<DayHours>({ ...DEFAULT_HOURS })
-const draftError = computed(() => validateDayHours(draft.value))
+const draftTimes = ref<string[]>([...DEFAULT_TIMES])
+/** Можно ли применить то, что в шторке */
+const draftValid = computed(() => (props.fixed ? draftTimes.value.length > 0 : !validateDayHours(draft.value)))
 const saveAsTemplate = ref(false)
 
 watch(() => selected.size, (n) => (selectedCount.value = n), { immediate: true })
@@ -133,23 +147,52 @@ const viewOptions = computed<SelectOption<CalendarView>[]>(() => [
 const helpBtn = ref<HTMLElement | null>(null)
 const hint = useHint(helpBtn, {
   key: 'schedule-dates',
-  content: () => t('scheduleEditor.steps'),
+  content: () => (props.fixed ? t('scheduleEditor.stepsTimes') : t('scheduleEditor.steps')),
   placement: 'bottom',
 })
 
-/** Подпись в клетке: начало–конец дня */
-function cellLabel(ranges: TimeRange[]): string {
-  const h = fromRanges(ranges)!
+/**
+ * Рабочий ли день в текущем режиме.
+ * @param date день "YYYY-MM-DD"
+ */
+function isWork(date: string): boolean {
+  return props.fixed ? !!slots.value[date]?.length : !!model.value[date]?.length
+}
+
+/**
+ * Подпись в клетке: начало–конец дня или «10:30 +2» для точного времени.
+ * @param date день "YYYY-MM-DD"
+ */
+function cellLabel(date: string): string {
+  if (props.fixed) return timesCellLabel(slots.value[date] ?? [])
+  const h = fromRanges(model.value[date])!
   return shortRange([h.from, h.to])
 }
 
-/** Подпись шаблона: «10–19» или «10–19, перерыв 14–15» */
+/** Подпись шаблона часов: «10–19» или «10–19, перерыв 14–15» */
 function templateLabel(ranges: TimeRange[]): string {
   const h = fromRanges(ranges)!
   const base = shortRange([h.from, h.to])
   if (!h.pauses.length) return base
   return t('hours.withPause', { hours: base, pause: h.pauses.map(shortRange).join(', ') })
 }
+
+/** Шаблон в шторке: подпись и применение к выбранным дням */
+interface TemplateChip {
+  /** id шаблона */
+  id: string
+  /** Подпись */
+  label: string
+  /** Применить к выбранным дням */
+  apply: () => void
+}
+
+/** Шаблоны текущего режима */
+const chips = computed<TemplateChip[]>(() =>
+  props.fixed
+    ? slotTemplates.value.map((tpl) => ({ id: tpl.id, label: timesLabel(tpl.times), apply: () => applyDay(tpl.times) }))
+    : templates.value.map((tpl) => ({ id: tpl.id, label: templateLabel(tpl.ranges), apply: () => applyDay(tpl.ranges) })),
+)
 
 /** Выбранные даты для заголовка шторки: «27, 28, 29 окт.» */
 const selectedTitle = computed(() => {
@@ -186,40 +229,61 @@ function clearSelection() {
 /** Шаг 2: открыть шторку с часами. Вызывает главная кнопка экрана-родителя */
 function openSheet() {
   if (!selected.size) return
-  // выбран один рабочий день — в форму подставляем его часы
-  const only = selected.size === 1 ? model.value[[...selected][0]] : undefined
-  draft.value = fromRanges(only) ?? { ...DEFAULT_HOURS }
+  // выбран один рабочий день — в форму подставляем его часы или времена
+  const only = selected.size === 1 ? [...selected][0] : undefined
+  if (props.fixed) draftTimes.value = [...((only && slots.value[only]) || DEFAULT_TIMES)]
+  else draft.value = fromRanges(only ? model.value[only] : undefined) ?? { ...DEFAULT_HOURS }
   saveAsTemplate.value = false
   sheetOpen.value = true
 }
 
 /**
- * Назначить выбранным дням часы (пустой массив — выходной) и закончить выбор.
- * @param ranges интервалы дня
+ * Назначить выбранным дням часы или времена (пустой массив — выходной) и закончить выбор.
+ * @param value интервалы дня или времена записи — смотря какой режим
  */
-function applyRanges(ranges: TimeRange[]) {
-  const next = { ...model.value }
-  for (const date of selected) {
-    if (ranges.length) next[date] = ranges.map((r) => [r[0], r[1]])
-    else delete next[date]
+function applyDay(value: TimeRange[] | string[]) {
+  if (props.fixed) {
+    const next = { ...slots.value }
+    for (const date of selected) {
+      if (value.length) next[date] = [...(value as string[])]
+      else delete next[date]
+    }
+    slots.value = next
+  } else {
+    const next = { ...model.value }
+    for (const date of selected) {
+      if (value.length) next[date] = (value as TimeRange[]).map((r) => [r[0], r[1]])
+      else delete next[date]
+    }
+    model.value = next
   }
-  model.value = next
   haptic.success()
   clearSelection()
 }
 
+/** Новый шаблон: id для списка */
+const newId = () => Math.random().toString(36).slice(2, 10)
+
 function applyDraft() {
-  if (draftError.value) return haptic.error()
+  if (!draftValid.value) return haptic.error()
+  if (props.fixed) {
+    const times = draftTimes.value
+    if (saveAsTemplate.value && !slotTemplates.value.some((tpl) => timesKey(tpl.times) === timesKey(times))) {
+      slotTemplates.value = [...slotTemplates.value, { id: newId(), times: [...times] }]
+    }
+    return applyDay(times)
+  }
   const ranges = toRanges(draft.value)
   if (saveAsTemplate.value && !templates.value.some((tpl) => rangesKey(tpl.ranges) === rangesKey(ranges))) {
-    templates.value = [...templates.value, { id: Math.random().toString(36).slice(2, 10), ranges }]
+    templates.value = [...templates.value, { id: newId(), ranges }]
   }
-  applyRanges(ranges)
+  applyDay(ranges)
 }
 
 function removeTemplate(id: string) {
   haptic.tap()
-  templates.value = templates.value.filter((tpl) => tpl.id !== id)
+  if (props.fixed) slotTemplates.value = slotTemplates.value.filter((tpl) => tpl.id !== id)
+  else templates.value = templates.value.filter((tpl) => tpl.id !== id)
 }
 
 defineExpose({ openSheet })
