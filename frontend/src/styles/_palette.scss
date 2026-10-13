@@ -42,8 +42,8 @@ $palettes: (
     'cute': #ffc46b,
   ),
   'sky': (
-    'primary': #4f9ae8,
-    'secondary': #4f9ae8,
+    'primary': #3f8ae6,
+    'secondary': #3f8ae6,
     'cute': #ffb08a,
   ),
 );
@@ -101,15 +101,15 @@ $neutral-dark: (
   }
 }
 
-// Нейтральные тона подстраиваются под тему: те же выверенные значения, повёрнутые к оттенку primary.
-// У темы по умолчанию поворот нулевой — её нейтральные цвета не меняются.
+// Нейтральные тона подстраиваются под тему: те же выверенные насыщенность и светлота, но оттенок — ровно как у primary.
+// Именно «ровно как», а не поворот на ту же разницу: у розовых нейтральных оттенок свой (≈300°, не 337°),
+// и поворот уводил тёмный фон «Неба» в бирюзово-зелёный. Тема по умолчанию остаётся как есть.
 @function tinted-neutral($scale, $primary) {
-  $base-hue: color.channel(map.get(map.get($palettes, $default-palette), 'primary'), 'hue', $space: hsl);
-  $delta: color.channel($primary, 'hue', $space: hsl) - $base-hue;
-  @if $delta == 0 { @return $scale; }
+  @if $primary == map.get(map.get($palettes, $default-palette), 'primary') { @return $scale; }
+  $hue: color.channel($primary, 'hue', $space: hsl);
   $out: ();
   @each $step, $value in $scale {
-    $out: map.merge($out, ($step: color.adjust($value, $hue: $delta, $space: hsl)));
+    $out: map.merge($out, ($step: color.change($value, $hue: $hue, $space: hsl)));
   }
   @return $out;
 }
