@@ -47,6 +47,7 @@ const toAppointment = (r: RecordModel): Appointment => ({
   master_timezone: r.expand?.master?.timezone ?? 'UTC',
   client_name: r.client_name,
   client_phone: r.client_phone ?? '',
+  note: r.note ?? '',
   client_telegram_id: r.client_telegram_id || null,
   start_at: new Date(r.start_at).toISOString(),
   end_at: new Date(r.end_at).toISOString(),

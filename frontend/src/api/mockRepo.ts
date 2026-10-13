@@ -60,6 +60,8 @@ function load(): Db {
 const db = load()
 // старые тестовые данные без записей
 db.appointments ??= []
+// записи из старых тестовых данных — без заметки
+for (const a of db.appointments) a.note ??= ''
 db.feedback ??= []
 // старые тестовые услуги без описания, категории и порядка
 db.services.forEach((s, i) => {
@@ -124,6 +126,7 @@ function createAppointment(input: BookingInput, source: EnumAppointmentSource): 
     master_timezone: master.timezone,
     client_name: input.clientName,
     client_phone: input.clientPhone,
+    note: input.note,
     client_telegram_id: source === EnumAppointmentSource.Client ? PREVIEW_TELEGRAM_ID : null,
     start_at: new Date(start).toISOString(),
     end_at: new Date(end).toISOString(),

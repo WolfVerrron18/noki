@@ -28,6 +28,7 @@
         :hint="t('schedule.phoneOptional')"
         :error="errors.phone"
       />
+      <NokiTextarea v-model="note" :rows="2" :maxlength="NOTE_MAX" :label="t('schedule.note')" :placeholder="t('schedule.notePlaceholder')" />
 
       <p v-if="errors.save" class="error">{{ errors.save }}</p>
       <NokiMainButton :text="t('schedule.save')" :loading="saving" :disabled="!start" @click="save" />
@@ -45,6 +46,8 @@ import NokiButton from '@/components/ui/NokiButton.vue'
 import NokiMainButton from '@/components/ui/NokiMainButton.vue'
 import NokiInput from '@/components/ui/NokiInput.vue'
 import NokiPhoneInput from '@/components/ui/NokiPhoneInput.vue'
+import NokiTextarea from '@/components/ui/NokiTextarea.vue'
+import { NOTE_MAX } from '@/api/types'
 import NokiSelect from '@/components/ui/NokiSelect.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import DateStrip from '@/components/booking/DateStrip.vue'
@@ -80,6 +83,7 @@ const date = ref(requested < today ? today : requested)
 const start = ref<string | null>(null)
 const clientName = ref('')
 const clientPhone = ref('')
+const note = ref('')
 const saving = ref(false)
 const errors = reactive<{ name?: string; phone?: string; save?: string }>({})
 
@@ -106,6 +110,7 @@ async function save() {
       startAt: start.value,
       clientName: clientName.value.trim(),
       clientPhone: phone ?? '',
+      note: note.value.trim(),
     })
     haptic.success()
     back()

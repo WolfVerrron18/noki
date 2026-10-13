@@ -20,6 +20,7 @@
       :placeholder="t('booking.phonePlaceholder')"
       :error="errors.phone"
     />
+    <NokiTextarea v-model="note" :rows="2" :maxlength="NOTE_MAX" :label="t('booking.note')" :placeholder="t('booking.notePlaceholder')" />
 
     <p v-if="errors.save" class="error">{{ errors.save }}</p>
     <NokiMainButton :text="t('booking.submit')" :loading="saving" @click="submit" />
@@ -37,6 +38,8 @@ import NokiMainButton from '@/components/ui/NokiMainButton.vue'
 import NokiCard from '@/components/ui/NokiCard.vue'
 import NokiInput from '@/components/ui/NokiInput.vue'
 import NokiPhoneInput from '@/components/ui/NokiPhoneInput.vue'
+import NokiTextarea from '@/components/ui/NokiTextarea.vue'
+import { NOTE_MAX } from '@/api/types'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { repo } from '@/api/repo'
 import { useAuth } from '@/stores/auth'
@@ -69,13 +72,14 @@ const country = computed(() => phoneCountry(master.value.timezone))
 
 const name = ref(auth.me?.name === 'Preview' ? '' : auth.me?.name ?? '')
 const phone = ref('')
+const note = ref('')
 const saving = ref(false)
 const errors = reactive<{ name?: string; phone?: string; save?: string }>({})
 
 const noki = ref<NokiMascotExpose | null>(null)
 /** Клиентка начала вводить данные: Ноки достаёт телефон и тапает на каждый символ */
 const typing = ref(false)
-watch([name, phone], async () => {
+watch([name, phone, note], async () => {
   typing.value = true
   await nextTick()
   noki.value?.phone(EnumNokiPhoneAction.Tap)
@@ -108,6 +112,7 @@ async function submit() {
       startAt: props.start,
       clientName: name.value.trim(),
       clientPhone,
+      note: note.value.trim(),
     })
     haptic.success()
     router.replace({ name: 'client-done', params: { slug: props.slug } })

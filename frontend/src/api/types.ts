@@ -156,6 +156,8 @@ export interface Appointment {
   client_name: string
   /** Телефон клиентки */
   client_phone: string
+  /** Заметка к записи: «записываю маму», пожелания. Пусто — нет */
+  note: string
   /** Telegram id клиентки, если записалась сама */
   client_telegram_id: number | null
   /** Начало, ISO в UTC */
@@ -204,7 +206,12 @@ export interface BookingInput {
   clientName: string
   /** Телефон клиентки */
   clientPhone: string
+  /** Заметка к записи, до NOTE_MAX символов; пусто — нет */
+  note: string
 }
+
+/** Длина заметки к записи — как в базе (appointments.note) */
+export const NOTE_MAX = 300
 
 /** Сырые поля графика из базы */
 interface RawSchedule {

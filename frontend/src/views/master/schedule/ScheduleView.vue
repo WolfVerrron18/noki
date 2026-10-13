@@ -51,6 +51,7 @@
           :key="a.id"
           :appointment="a"
           :timezone="master.timezone"
+          :price="store.services.find((s) => s.id === a.service)?.price"
           for-master
           cancellable
           completable
