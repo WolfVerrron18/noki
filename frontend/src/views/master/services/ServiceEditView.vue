@@ -53,7 +53,7 @@
 
     <NokiSwitch v-model="form.is_active" :label="t('services.visible')" />
 
-    <NokiButton v-if="existing" variant="danger" :disabled="saving" @click="remove">{{ t('services.delete') }}</NokiButton>
+    <NokiButton v-if="existing" variant="outline" :disabled="saving" @click="remove">{{ t('services.delete') }}</NokiButton>
 
     <p v-if="errors.save" class="error">{{ errors.save }}</p>
     <NokiMainButton :text="t('common.save')" :loading="saving" @click="save" />

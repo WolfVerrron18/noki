@@ -38,7 +38,7 @@
         <NokiButton v-if="canComplete" variant="soft" class="action" @click="emit('complete')">
           {{ t('schedule.markDone') }}
         </NokiButton>
-        <NokiButton v-if="canCancel" variant="danger" class="action" @click="emit('cancel')">
+        <NokiButton v-if="canCancel" variant="outline" class="action" @click="emit('cancel')">
           {{ t('booking.cancel') }}
         </NokiButton>
       </footer>
