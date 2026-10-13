@@ -53,6 +53,40 @@ const en: Messages = {
       sky: 'Sky',
     },
   },
+  tour: {
+    step: '{n} of {total}',
+    next: 'Next',
+    back: 'Back',
+    skip: 'Skip',
+    done: 'Got it',
+    replay: 'How to use the app',
+    master: {
+      link: {
+        title: 'Your booking link',
+        text: 'Send it to clients or add it to your profile — they’ll pick a service and a free time themselves',
+      },
+      services: {
+        title: 'Services',
+        text: 'Add what you do, how long it takes and what it costs. Clients see them in this order',
+      },
+      schedule: {
+        title: 'Schedule',
+        text: 'All your bookings by day. If a client messaged you directly, add the booking manually',
+      },
+      hours: {
+        title: 'Working hours',
+        text: 'When you take clients: the same every week or by date, with breaks or at exact times',
+      },
+      appearance: {
+        title: 'Appearance',
+        text: 'Pick your page colours and Noki’s outfit — this is how clients will see you',
+      },
+      help: {
+        title: 'If you forget something',
+        text: 'You can watch this again any time — the link is always at the bottom',
+      },
+    },
+  },
   auth: {
     error: 'Oops…',
     openInTelegram: 'Please open the app in Telegram',

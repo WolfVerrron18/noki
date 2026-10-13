@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <NokiCard class="link-card">
+    <NokiCard class="link-card" data-tour="link">
       <h2>{{ t('master.linkTitle') }}</h2>
       <p class="hint">{{ t('master.linkHint') }}</p>
       <code class="link">{{ bookingLink(master.slug) }}</code>
@@ -30,17 +30,17 @@
     </button>
 
     <nav class="menu">
-      <button v-press="{ depth: 0.04 }" type="button" @click="router.push({ name: 'master-services' })">
+      <button v-press="{ depth: 0.04 }" type="button" data-tour="services" @click="router.push({ name: 'master-services' })">
         <span>{{ t('master.menu.services') }}</span>
         <span class="hint">{{ t('master.menu.servicesCount', activeCount) }}</span>
       </button>
-      <button v-press="{ depth: 0.04 }" type="button" @click="router.push({ name: 'master-schedule' })">
+      <button v-press="{ depth: 0.04 }" type="button" data-tour="schedule" @click="router.push({ name: 'master-schedule' })">
         <span>{{ t('master.menu.schedule') }}</span>
       </button>
-      <button v-press="{ depth: 0.04 }" type="button" @click="router.push({ name: 'master-hours' })">
+      <button v-press="{ depth: 0.04 }" type="button" data-tour="hours" @click="router.push({ name: 'master-hours' })">
         <span>{{ t('master.menu.hours') }}</span>
       </button>
-      <button v-press="{ depth: 0.04 }" type="button" @click="router.push({ name: 'master-mascot' })">
+      <button v-press="{ depth: 0.04 }" type="button" data-tour="appearance" @click="router.push({ name: 'master-mascot' })">
         <span>{{ t('master.menu.mascot') }}</span>
       </button>
       <button v-press="{ depth: 0.04 }" type="button" @click="router.push({ name: 'master-profile' })">
@@ -48,9 +48,14 @@
       </button>
     </nav>
 
-    <button type="button" class="feedback-link" @click="router.push({ name: 'master-feedback' })">
-      {{ t('master.menu.feedback') }}
-    </button>
+    <div class="footer-links">
+      <button type="button" class="feedback-link" data-tour="help" @click="tour.start(MASTER_HOME_TOUR)">
+        {{ t('tour.replay') }}
+      </button>
+      <button type="button" class="feedback-link" @click="router.push({ name: 'master-feedback' })">
+        {{ t('master.menu.feedback') }}
+      </button>
+    </div>
 
     <Transition name="toast">
       <div v-if="toast" class="toast">{{ toast }}</div>
@@ -59,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import NokiMascot, { type NokiMascotExpose } from '@/components/mascot/NokiMascot.vue'
@@ -70,6 +75,11 @@ import { useMaster } from '@/stores/master'
 import { useShareLink } from '@/composables/useShareLink'
 import { DEFAULT_LOOK, EnumMascotHead, type NokiLook } from '@/components/mascot/look'
 import { DEFAULT_PALETTE } from '@/styles/palettes'
+import { useTour } from '@/composables/useTour'
+import { MASTER_HOME_TOUR } from '@/components/tour/tours'
+
+/** Пауза перед туром: экран успевает появиться, Ноки — поздороваться */
+const TOUR_DELAY_MS = 900
 
 /** Пример наряда для карточки-приглашения в конструктор */
 const TEASER_LOOK: NokiLook = { ...DEFAULT_LOOK, head: EnumMascotHead.FlowerCrown }
@@ -87,6 +97,10 @@ const isDefaultLook = computed(
 const activeCount = computed(() => store.services.filter((s) => s.is_active).length)
 const toast = ref('')
 const noki = ref<NokiMascotExpose | null>(null)
+const tour = useTour()
+
+// первое знакомство с кабинетом: тур показывается сам один раз, дальше — по ссылке внизу
+onMounted(() => setTimeout(() => tour.autoStart(MASTER_HOME_TOUR), TOUR_DELAY_MS))
 
 function flash(key: string) {
   toast.value = t(key)
@@ -172,6 +186,12 @@ async function onCopy() {
 
     &:disabled { opacity: 0.6; cursor: default; }
   }
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .feedback-link {

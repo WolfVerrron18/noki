@@ -4,6 +4,7 @@
       <component :is="Component" />
     </Transition>
   </RouterView>
+  <NokiTour />
 </template>
 
 <script setup lang="ts">
@@ -12,6 +13,7 @@
 import { computed, provide, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { NOKI_LOOK_KEY } from '@/components/mascot/look'
+import NokiTour from '@/components/ui/NokiTour.vue'
 import { useBooking } from '@/stores/booking'
 import { useMaster } from '@/stores/master'
 import { applyPalette, DEFAULT_PALETTE } from '@/styles/palettes'
