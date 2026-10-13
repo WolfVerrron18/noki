@@ -16,8 +16,8 @@ import { haptic } from '@/telegram'
 
 /** Пропсы NokiButton */
 interface Props {
-  /** Вид: primary — основное действие, soft — второстепенное, ghost — без фона */
-  variant?: 'primary' | 'soft' | 'ghost'
+  /** Вид: primary — основное действие, soft — второстепенное, ghost — без фона, danger — отмена или удаление (красный контур) */
+  variant?: 'primary' | 'soft' | 'ghost' | 'danger'
   /** Заблокировать кнопку */
   disabled?: boolean
   /** Показать индикатор загрузки вместо текста, кнопка заблокирована */
@@ -55,6 +55,12 @@ const emit = defineEmits<Emits>()
 }
 .soft { background: var(--primary-100); color: var(--primary-600); }
 .ghost { background: transparent; color: var(--text-muted); }
+// опасное действие (отмена, удаление): контур и текст красные, без заливки — заметно, но не кричит
+.danger {
+  background: var(--bg-card);
+  color: var(--danger-500);
+  box-shadow: inset 0 0 0 1.5px var(--danger-300);
+}
 
 .dots {
   display: inline-flex;

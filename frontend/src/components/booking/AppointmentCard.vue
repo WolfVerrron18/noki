@@ -38,7 +38,7 @@
         <NokiButton v-if="canComplete" variant="soft" class="action" @click="emit('complete')">
           {{ t('schedule.markDone') }}
         </NokiButton>
-        <NokiButton v-if="canCancel" variant="ghost" class="action cancel" @click="emit('cancel')">
+        <NokiButton v-if="canCancel" variant="danger" class="action" @click="emit('cancel')">
           {{ t('booking.cancel') }}
         </NokiButton>
       </footer>
@@ -123,16 +123,16 @@ const initial = computed(() => {
   justify-content: space-between;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  background: var(--primary-100);
+  background: var(--primary-200);
   color: var(--primary-on-soft);
 
   .done & {
-    background: var(--success-100);
+    background: var(--success-200);
     color: var(--success-on-soft);
   }
 
   .cancelled & {
-    background: var(--neutral-200);
+    background: var(--neutral-300);
     color: var(--text-muted);
   }
 }
@@ -276,5 +276,4 @@ const initial = computed(() => {
   font-size: var(--font-size-sm);
 }
 
-.cancel { color: var(--danger-500); }
 </style>

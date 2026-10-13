@@ -45,6 +45,13 @@ export default {
       topHat: 'Цилиндр',
     },
   },
+  scheme: {
+    label: 'Тема',
+    auto: 'Как в Telegram',
+    light: 'Светлая',
+    dark: 'Тёмная',
+    hint: 'Только для тебя, на этом устройстве',
+  },
   theme: {
     palette: {
       rose: 'Роза',

@@ -23,27 +23,27 @@ $status: (
 $palettes: (
   'rose': (
     'primary': #f2669c,   // розовый
-    'secondary': #9b7bff, // лаванда
+    'secondary': #f2669c, // второй акцент = основной: интерфейс в один цвет темы
     'cute': #ffb08a,      // персик: маскот, иллюстрации
   ),
   'lavender': (
     'primary': #9275ee,
-    'secondary': #ea6aa6,
+    'secondary': #9275ee,
     'cute': #ffb08a,
   ),
   'mint': (
     'primary': #2aa68b,
-    'secondary': #8f7cf0,
+    'secondary': #2aa68b,
     'cute': #ffb08a,
   ),
   'peach': (
     'primary': #e9734a,
-    'secondary': #e9649b,
+    'secondary': #e9734a,
     'cute': #ffc46b,
   ),
   'sky': (
     'primary': #4f9ae8,
-    'secondary': #9b7bff,
+    'secondary': #4f9ae8,
     'cute': #ffb08a,
   ),
 );
@@ -53,7 +53,8 @@ $default-palette: 'rose';
 // Совместимость: базовые акценты темы по умолчанию + цвета состояний
 $bases: map.merge(map.get($palettes, $default-palette), $status);
 
-$alpha-steps: (100: 0.1, 200: 0.2, 300: 0.35);
+// мягкие подложки поплотнее: на пастельном фоне 10% почти не видно, чипы и шапки сливались
+$alpha-steps: (100: 0.16, 200: 0.26, 300: 0.4);
 $shade-steps: (600: 12%, 700: 24%, 800: 36%, 900: 48%);
 
 @function scale($base) {

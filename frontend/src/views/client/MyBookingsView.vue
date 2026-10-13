@@ -25,6 +25,8 @@
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
+
+    <NokiSchemeSwitch class="scheme" />
   </div>
 </template>
 
@@ -35,6 +37,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import NokiMascot from '@/components/mascot/NokiMascot.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import NokiSchemeSwitch from '@/components/ui/NokiSchemeSwitch.vue'
 import AppointmentCard from '@/components/booking/AppointmentCard.vue'
 import { repo } from '@/api/repo'
 import type { Appointment } from '@/api/types'
@@ -90,4 +93,7 @@ onMounted(load)
   color: var(--danger-500);
   font-size: var(--font-size-sm);
 }
+
+// настройка темы — внизу, после записей
+.scheme { margin-top: var(--space-lg); }
 </style>

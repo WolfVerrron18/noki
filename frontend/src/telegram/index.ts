@@ -132,15 +132,50 @@ export function getStartParam(): string | undefined {
 
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
 
-function applyTheme() {
+/** Светлая или тёмная тема: как в Telegram (или системе) либо выбранная вручную */
+export type ColorSchemePref = 'auto' | 'light' | 'dark'
+
+const SCHEME_KEY = 'nidoki.colorScheme'
+
+/** Выбор темы на этом устройстве; не задан или нет доступа к хранилищу — как в Telegram */
+export function colorSchemePref(): ColorSchemePref {
+  try {
+    const v = localStorage.getItem(SCHEME_KEY)
+    return v === 'light' || v === 'dark' ? v : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
+
+/**
+ * Запомнить выбор темы на этом устройстве и сразу применить. Клиенток и других пользователей не касается.
+ * @param pref как в Telegram, светлая или тёмная
+ */
+export function setColorSchemePref(pref: ColorSchemePref) {
+  try {
+    if (pref === 'auto') localStorage.removeItem(SCHEME_KEY)
+    else localStorage.setItem(SCHEME_KEY, pref)
+  } catch {
+    // нет доступа к хранилищу — тема применится только до перезапуска
+  }
+  applyTheme(pref)
+}
+
+/**
+ * Поставить светлую или тёмную тему.
+ * @param pref выбор пользователя; по умолчанию — сохранённый
+ */
+function applyTheme(pref: ColorSchemePref = colorSchemePref()) {
   const root = document.documentElement
   // Скрипт Telegram подключён и в обычном браузере, но там colorScheme всегда 'light' —
   // поэтому тему Telegram берём только внутри Telegram, иначе — системную
   const native = isInTelegram()
-  const scheme = native ? tg!.colorScheme : systemDark.matches ? 'dark' : 'light'
+  const auto = native ? tg!.colorScheme : systemDark.matches ? 'dark' : 'light'
+  const scheme = pref === 'auto' ? auto : pref
   root.dataset.theme = scheme
-  // Берём фон и текст из Telegram, свои акценты оставляем
-  const p = native ? tg!.themeParams : {}
+  // Фон и текст берём из Telegram, свои акценты оставляем. Если тема выбрана вручную и не совпадает
+  // с темой Telegram, его цвета не подходят (светлый фон под тёмной темой) — тогда свои
+  const p = native && scheme === tg!.colorScheme ? tg!.themeParams : {}
   const map: Record<string, string | undefined> = {
     '--tg-bg': p.bg_color,
     '--tg-text': p.text_color,
@@ -156,12 +191,12 @@ function applyTheme() {
 export function initTelegram() {
   applyTheme()
   if (!isInTelegram()) {
-    systemDark.addEventListener('change', applyTheme)
+    systemDark.addEventListener('change', () => applyTheme())
     return
   }
   tg!.ready()
   tg!.expand()
-  tg!.onEvent('themeChanged', applyTheme)
+  tg!.onEvent('themeChanged', () => applyTheme())
 }
 
 /**

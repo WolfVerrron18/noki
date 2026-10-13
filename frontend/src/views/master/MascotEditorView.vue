@@ -32,6 +32,8 @@
       </div>
     </section>
 
+    <NokiSchemeSwitch />
+
     <h2>{{ t('mascot.editor.headTitle') }}</h2>
     <div ref="optionsEl" class="options">
       <button
@@ -67,6 +69,7 @@ import NokiConfetti from '@/components/fx/NokiConfetti.vue'
 import { useStaggerIn } from '@/animations/useStaggerIn'
 import NokiMainButton from '@/components/ui/NokiMainButton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import NokiSchemeSwitch from '@/components/ui/NokiSchemeSwitch.vue'
 import { DEFAULT_LOOK, EnumMascotHead, type NokiLook } from '@/components/mascot/look'
 import { MASCOT_HEAD } from '@/components/mascot/registry'
 import { EnumNokiReaction } from '@/components/mascot/rive/character'

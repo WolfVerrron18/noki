@@ -46,6 +46,13 @@ const en: Messages = {
       topHat: 'Top hat',
     },
   },
+  scheme: {
+    label: 'Appearance',
+    auto: 'Like Telegram',
+    light: 'Light',
+    dark: 'Dark',
+    hint: 'Just for you, on this device',
+  },
   theme: {
     palette: {
       rose: 'Rose',

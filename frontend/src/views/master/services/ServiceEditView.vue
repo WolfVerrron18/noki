@@ -53,7 +53,7 @@
 
     <NokiSwitch v-model="form.is_active" :label="t('services.visible')" />
 
-    <NokiButton v-if="existing" variant="ghost" class="delete" :disabled="saving" @click="remove">{{ t('services.delete') }}</NokiButton>
+    <NokiButton v-if="existing" variant="danger" :disabled="saving" @click="remove">{{ t('services.delete') }}</NokiButton>
 
     <p v-if="errors.save" class="error">{{ errors.save }}</p>
     <NokiMainButton :text="t('common.save')" :loading="saving" @click="save" />
@@ -196,7 +196,6 @@ async function save() {
 // место под ряд подсказок: подпись + ряд кнопок. У вида без подсказок («Другое») остаётся пустым
 .presets { min-height: calc(var(--control-height) + var(--space-md)); }
 
-.delete { color: var(--danger-500); }
 
 .not-found {
   align-items: center;
