@@ -20,10 +20,9 @@
       <SlotGrid v-else v-model="start" :slots="slots" :timezone="master.timezone" />
 
       <NokiInput v-model="clientName" :label="t('schedule.clientName')" :error="errors.name" />
-      <NokiInput
+      <NokiPhoneInput
         v-model="clientPhone"
-        type="tel"
-        inputmode="tel"
+        :country="country"
         :label="t('schedule.clientPhone')"
         :placeholder="t('booking.phonePlaceholder')"
         :hint="t('schedule.phoneOptional')"
@@ -45,6 +44,7 @@ import NokiMascot from '@/components/mascot/NokiMascot.vue'
 import NokiButton from '@/components/ui/NokiButton.vue'
 import NokiMainButton from '@/components/ui/NokiMainButton.vue'
 import NokiInput from '@/components/ui/NokiInput.vue'
+import NokiPhoneInput from '@/components/ui/NokiPhoneInput.vue'
 import NokiSelect from '@/components/ui/NokiSelect.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import DateStrip from '@/components/booking/DateStrip.vue'
@@ -53,7 +53,7 @@ import { repo } from '@/api/repo'
 import { useMaster } from '@/stores/master'
 import { useFormat } from '@/composables/useFormat'
 import { useSlots } from '@/composables/useSlots'
-import { isValidPhone } from '@/utils/phone'
+import { normalizePhone, phoneCountry } from '@/utils/phone'
 import { todayIn } from '@/utils/slots'
 import { haptic } from '@/telegram'
 
@@ -64,6 +64,8 @@ const store = useMaster()
 const fmt = useFormat()
 
 const master = computed(() => store.master!)
+/** Страна для номеров без «+»: по поясу мастера */
+const country = computed(() => phoneCountry(master.value.timezone))
 const services = computed(() => store.services.filter((s) => s.is_active))
 const serviceOptions = computed(() =>
   services.value.map((s) => ({ value: s.id, label: `${s.name} · ${fmt.duration(s.duration_min)}` })),
@@ -90,7 +92,9 @@ function back() {
 
 async function save() {
   errors.name = clientName.value.trim() ? undefined : t('booking.nameRequired')
-  errors.phone = !clientPhone.value.trim() || isValidPhone(clientPhone.value) ? undefined : t('booking.phoneInvalid')
+  // телефон необязателен, но если введён — только верный
+  const phone = clientPhone.value.trim() ? normalizePhone(clientPhone.value, country.value) : ''
+  errors.phone = phone === null ? t('booking.phoneInvalid') : undefined
   errors.save = undefined
   if (errors.name || errors.phone || !start.value) return haptic.error()
 
@@ -101,7 +105,7 @@ async function save() {
       serviceId: serviceId.value,
       startAt: start.value,
       clientName: clientName.value.trim(),
-      clientPhone: clientPhone.value.trim(),
+      clientPhone: phone ?? '',
     })
     haptic.success()
     back()

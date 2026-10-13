@@ -1,4 +1,4 @@
-<template>
+  if (errors.name || !clientPhone) return haptic.error()<template>
   <div class="stack">
     <PageHeader :title="t('booking.confirmTitle')" :back="back" />
 
@@ -12,10 +12,10 @@
     </NokiCard>
 
     <NokiInput v-model="name" :label="t('booking.name')" :error="errors.name" />
-    <NokiInput
+    <NokiPhoneInput
       v-model="phone"
-      type="tel"
-      inputmode="tel"
+      :country="country"
+      telegram
       :label="t('booking.phone')"
       :placeholder="t('booking.phonePlaceholder')"
       :error="errors.phone"
@@ -36,12 +36,13 @@ import { EnumNokiPhoneAction } from '@/components/mascot/rive/character'
 import NokiMainButton from '@/components/ui/NokiMainButton.vue'
 import NokiCard from '@/components/ui/NokiCard.vue'
 import NokiInput from '@/components/ui/NokiInput.vue'
+import NokiPhoneInput from '@/components/ui/NokiPhoneInput.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { repo } from '@/api/repo'
 import { useAuth } from '@/stores/auth'
 import { useBooking } from '@/stores/booking'
 import { useFormat } from '@/composables/useFormat'
-import { isValidPhone } from '@/utils/phone'
+import { normalizePhone, phoneCountry } from '@/utils/phone'
 import { haptic } from '@/telegram'
 
 /** Пропсы BookingConfirmView */
@@ -63,6 +64,8 @@ const fmt = useFormat()
 
 const master = computed(() => store.master!)
 const service = computed(() => store.serviceById(props.serviceId))
+/** Страна для номеров без «+»: по поясу мастера */
+const country = computed(() => phoneCountry(master.value.timezone))
 
 const name = ref(auth.me?.name === 'Preview' ? '' : auth.me?.name ?? '')
 const phone = ref('')
@@ -89,9 +92,10 @@ function back() {
 
 async function submit() {
   errors.name = name.value.trim() ? undefined : t('booking.nameRequired')
-  errors.phone = isValidPhone(phone.value) ? undefined : t('booking.phoneInvalid')
+  const clientPhone = normalizePhone(phone.value, country.value)
+  errors.phone = clientPhone ? undefined : t('booking.phoneInvalid')
   errors.save = undefined
-  if (errors.name || errors.phone) return haptic.error()
+  if (errors.name || !clientPhone) return haptic.error()
 
   saving.value = true
   typing.value = true
@@ -103,7 +107,7 @@ async function submit() {
       serviceId: props.serviceId,
       startAt: props.start,
       clientName: name.value.trim(),
-      clientPhone: phone.value.trim(),
+      clientPhone,
     })
     haptic.success()
     router.replace({ name: 'client-done', params: { slug: props.slug } })

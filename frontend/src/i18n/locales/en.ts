@@ -64,6 +64,9 @@ const en: Messages = {
   price: {
     free: 'Free',
   },
+  phone: {
+    fromTelegram: 'Use my Telegram number',
+  },
   onboarding: {
     step: 'Step {n} of {total}',
     profile: {

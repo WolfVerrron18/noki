@@ -64,6 +64,18 @@ interface TgHaptic {
   selectionChanged(): void
 }
 
+/** Ответ на requestContact: номер приходит только в новых клиентах, без проверки подписи */
+interface TgContactResponse {
+  /** Неподписанные данные контакта */
+  responseUnsafe?: {
+    /** Контакт пользователя */
+    contact?: {
+      /** Номер, иногда без «+» */
+      phone_number?: string
+    }
+  }
+}
+
 /** Используемая часть window.Telegram.WebApp */
 interface WebApp {
   /** Сырая подписанная строка initData. Отправляется на сервер для проверки */
@@ -99,6 +111,10 @@ interface WebApp {
   disableVerticalSwipes?(): void
   /** Снова разрешить закрытие свайпом вниз */
   enableVerticalSwipes?(): void
+  /** Попросить пользователя поделиться номером (Bot API 6.9+) */
+  requestContact?(cb: (shared: boolean, response?: TgContactResponse) => void): void
+  /** Поддерживает ли клиент Telegram версию Bot API */
+  isVersionAtLeast?(version: string): boolean
 }
 
 declare global {
@@ -173,4 +189,23 @@ export function confirmDialog(message: string): Promise<boolean> {
     return new Promise((resolve) => tg!.showConfirm!(message, resolve))
   }
   return Promise.resolve(window.confirm(message))
+}
+
+/** Можно ли попросить номер у Telegram (кнопка «Взять из Telegram») */
+export function canRequestPhone(): boolean {
+  return isInTelegram() && !!tg!.requestContact && !!tg!.isVersionAtLeast?.('6.9')
+}
+
+/**
+ * Попросить номер телефона у Telegram. Это только подстановка в поле: номер не проверен подписью.
+ * @returns номер с «+» или null, если отказалась или клиент не вернул номер
+ */
+export function requestPhone(): Promise<string | null> {
+  if (!canRequestPhone()) return Promise.resolve(null)
+  return new Promise((resolve) => {
+    tg!.requestContact!((shared, response) => {
+      const raw = shared ? response?.responseUnsafe?.contact?.phone_number : undefined
+      resolve(raw ? (raw.startsWith('+') ? raw : `+${raw}`) : null)
+    })
+  })
 }

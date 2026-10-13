@@ -10,7 +10,7 @@
       <strong>{{ appointment.service_name }}</strong>
       <template v-if="forMaster">
         <span>{{ appointment.client_name }}</span>
-        <a v-if="appointment.client_phone" class="phone" :href="`tel:${appointment.client_phone}`">{{ appointment.client_phone }}</a>
+        <a v-if="appointment.client_phone" class="phone" :href="`tel:${appointment.client_phone}`">{{ displayPhone(appointment.client_phone) }}</a>
       </template>
       <span v-else class="hint">{{ t('booking.with', { name: appointment.master_name }) }}</span>
 
@@ -39,6 +39,7 @@ import { useI18n } from 'vue-i18n'
 import { EnumAppointmentSource, EnumAppointmentStatus, isCancellable, isCompletable, type Appointment } from '@/api/types'
 import NokiButton from '@/components/ui/NokiButton.vue'
 import { useFormat } from '@/composables/useFormat'
+import { displayPhone } from '@/utils/phone'
 
 /** Пропсы AppointmentCard */
 interface Props {

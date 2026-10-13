@@ -63,6 +63,9 @@ export default {
   price: {
     free: 'Бесплатно',
   },
+  phone: {
+    fromTelegram: 'Взять номер из Telegram',
+  },
   onboarding: {
     step: 'Шаг {n} из {total}',
     profile: {
