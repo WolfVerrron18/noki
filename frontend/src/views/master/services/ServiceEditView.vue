@@ -6,6 +6,11 @@
 
     <ServiceCategoryPicker v-model="form.category" :label="t('services.categoryLabel')" />
 
+    <!-- типовые услуги вида: тап заполняет название и длительность. Место под ряд занято всегда, чтобы экран не прыгал -->
+    <div v-if="!existing" class="presets">
+      <NokiSegmented v-if="presetOptions.length" v-model="presetPick" :label="t('services.presets')" :options="presetOptions" scroll />
+    </div>
+
     <NokiSegmented v-model="durationPick" :label="t('services.duration')" :options="durationOptions" />
     <NokiInput
       v-if="durationPick === CUSTOM"
@@ -53,6 +58,7 @@ import NokiSwitch from '@/components/ui/NokiSwitch.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import ServiceCategoryPicker from '@/components/services/ServiceCategoryPicker.vue'
 import { EnumServiceCategory } from '@/components/services/category'
+import { SERVICE_PRESETS } from '@/components/services/presets'
 import { useMaster } from '@/stores/master'
 import { useFormat } from '@/composables/useFormat'
 import { haptic } from '@/telegram'
@@ -94,6 +100,29 @@ const durationOptions = computed(() => [
   { value: CUSTOM, label: t('services.durationCustom') },
 ])
 
+/** Подсказки для выбранного вида */
+const presetOptions = computed(() =>
+  SERVICE_PRESETS[form.category].map((p) => ({ value: p.id, label: t(`services.preset.${p.id}`) })),
+)
+
+/** Выбранная подсказка: подсвечена, пока название и длительность совпадают с ней */
+const presetPick = computed({
+  get() {
+    const duration = durationPick.value === CUSTOM ? Number(customDuration.value) : durationPick.value
+    const p = SERVICE_PRESETS[form.category].find((x) => t(`services.preset.${x.id}`) === form.name.trim())
+    return p && p.duration_min === duration ? p.id : undefined
+  },
+  set(id) {
+    const p = SERVICE_PRESETS[form.category].find((x) => x.id === id)
+    if (!p) return
+    form.name = t(`services.preset.${p.id}`)
+    durationPick.value = PRESETS.includes(p.duration_min) ? p.duration_min : CUSTOM
+    customDuration.value = String(p.duration_min)
+    errors.name = undefined
+    errors.duration = undefined
+  },
+})
+
 function back() {
   router.push({ name: 'master-services' })
 }
@@ -129,6 +158,9 @@ async function save() {
 </script>
 
 <style scoped lang="scss">
+// место под ряд подсказок: подпись + ряд кнопок. У вида без подсказок («Другое») остаётся пустым
+.presets { min-height: calc(var(--control-height) + var(--space-md)); }
+
 .error {
   margin: 0;
   color: var(--danger-500);
