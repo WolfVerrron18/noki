@@ -1,0 +1,139 @@
+<template>
+  <div class="stack">
+    <PageHeader :title="t('booking.confirmTitle')" :back="back" />
+
+    <NokiCard v-if="service" class="summary">
+      <NokiMascot ref="noki" mood="happy" :size="72" :phone="typing" />
+      <div>
+        <strong>{{ service.name }}</strong>
+        <p class="when">{{ fmt.dateLong(start, master.timezone) }}, {{ fmt.time(start, master.timezone) }}</p>
+        <p class="hint">{{ master.name }} · {{ fmt.price(service.price) }}</p>
+      </div>
+    </NokiCard>
+
+    <NokiInput v-model="name" :label="t('booking.name')" :error="errors.name" />
+    <NokiInput
+      v-model="phone"
+      type="tel"
+      inputmode="tel"
+      :label="t('booking.phone')"
+      :placeholder="t('booking.phonePlaceholder')"
+      :error="errors.phone"
+    />
+
+    <p v-if="errors.save" class="error">{{ errors.save }}</p>
+    <NokiMainButton :text="t('booking.submit')" :loading="saving" @click="submit" />
+  </div>
+</template>
+
+<script setup lang="ts">
+// Подтверждение записи: имя и телефон
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import NokiMascot, { type NokiMascotExpose } from '@/components/mascot/NokiMascot.vue'
+import { EnumNokiPhoneAction } from '@/components/mascot/rive/character'
+import NokiMainButton from '@/components/ui/NokiMainButton.vue'
+import NokiCard from '@/components/ui/NokiCard.vue'
+import NokiInput from '@/components/ui/NokiInput.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import { repo } from '@/api/repo'
+import { useAuth } from '@/stores/auth'
+import { useBooking } from '@/stores/booking'
+import { useFormat } from '@/composables/useFormat'
+import { isValidPhone } from '@/utils/phone'
+import { haptic } from '@/telegram'
+
+/** Пропсы BookingConfirmView */
+interface Props {
+  /** Адрес мастера */
+  slug: string
+  /** id услуги */
+  serviceId: string
+  /** Начало записи, ISO в UTC (из query) */
+  start: string
+}
+
+const props = defineProps<Props>()
+const { t } = useI18n()
+const router = useRouter()
+const store = useBooking()
+const auth = useAuth()
+const fmt = useFormat()
+
+const master = computed(() => store.master!)
+const service = computed(() => store.serviceById(props.serviceId))
+
+const name = ref(auth.me?.name === 'Preview' ? '' : auth.me?.name ?? '')
+const phone = ref('')
+const saving = ref(false)
+const errors = reactive<{ name?: string; phone?: string; save?: string }>({})
+
+const noki = ref<NokiMascotExpose | null>(null)
+/** Клиентка начала вводить данные: Ноки достаёт телефон и тапает на каждый символ */
+const typing = ref(false)
+watch([name, phone], async () => {
+  typing.value = true
+  await nextTick()
+  noki.value?.phone(EnumNokiPhoneAction.Tap)
+})
+
+onMounted(() => {
+  if (!service.value) router.replace({ name: 'client-master', params: { slug: props.slug } })
+  else if (Number.isNaN(Date.parse(props.start)) || Date.parse(props.start) <= Date.now()) back()
+})
+
+function back() {
+  router.push({ name: 'client-time', params: { slug: props.slug, serviceId: props.serviceId } })
+}
+
+async function submit() {
+  errors.name = name.value.trim() ? undefined : t('booking.nameRequired')
+  errors.phone = isValidPhone(phone.value) ? undefined : t('booking.phoneInvalid')
+  errors.save = undefined
+  if (errors.name || errors.phone) return haptic.error()
+
+  saving.value = true
+  typing.value = true
+  await nextTick()
+  noki.value?.phone(EnumNokiPhoneAction.Send)
+  try {
+    store.lastBooking = await repo().book({
+      masterId: master.value.id,
+      serviceId: props.serviceId,
+      startAt: props.start,
+      clientName: name.value.trim(),
+      clientPhone: phone.value.trim(),
+    })
+    haptic.success()
+    router.replace({ name: 'client-done', params: { slug: props.slug } })
+  } catch (e) {
+    errors.save = (e as { status?: number })?.status === 409 ? t('booking.slotTaken') : t('common.error')
+    haptic.error()
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<style scoped lang="scss">
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+
+  p { margin: 0; }
+}
+
+.when {
+  margin-top: var(--space-xs);
+  color: var(--primary-600);
+  font-weight: var(--font-weight-semibold);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger-500);
+  font-size: var(--font-size-sm);
+}
+</style>

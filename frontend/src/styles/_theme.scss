@@ -1,0 +1,42 @@
+@use 'palette' as p;
+
+// Тема: шкалы цветов + семантические алиасы, светлая и тёмная.
+// Алиасы нужны там, где значение зависит от темы или подменяется Telegram (--tg-*).
+
+@mixin emit {
+  :root {
+    @each $name, $base in p.$bases {
+      @include p.emit-scale($name, p.scale($base));
+    }
+    @include p.emit-scale('neutral', p.$neutral-light);
+
+    // текст на мягкой подложке -100 (бейджи, плашки): в светлой теме тёмный оттенок
+    @each $name, $base in p.$bases {
+      --#{$name}-on-soft: var(--#{$name}-700);
+    }
+
+    --bg: var(--tg-bg, var(--neutral-100));        // фон страницы
+    --bg-card: #fff;                                // фон карточек поверх --bg
+    --text: var(--tg-text, var(--neutral-900));
+    --text-muted: var(--tg-hint, var(--neutral-600));
+    --on-primary: #ffffff;                          // текст на primary-фоне (полный hex — его читает MainButton Telegram)
+    --overlay: rgba(0, 0, 0, 0.35);                 // затемнение под шторкой и туром
+    --shadow: 0 6px 20px var(--primary-200);
+
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    @include p.emit-scale('neutral', p.$neutral-dark);
+
+    // в тёмной теме подложка -100 тёмная, поэтому текст на ней — светлый оттенок
+    @each $name, $base in p.$bases {
+      --#{$name}-on-soft: var(--#{$name}-400);
+    }
+    --bg-card: var(--neutral-200);
+    --shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    --overlay: rgba(0, 0, 0, 0.55);
+
+    color-scheme: dark;
+  }
+}

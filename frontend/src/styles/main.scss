@@ -1,0 +1,49 @@
+@use 'theme';
+@use 'geometry';
+@use 'typography';
+
+@include theme.emit;
+
+:root {
+  @include geometry.emit;
+  @include typography.emit;
+}
+
+@include typography.base;
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: var(--space-md) var(--space-md) calc(var(--space-lg) + env(safe-area-inset-bottom));
+}
+
+// утилиты
+.hint { color: var(--text-muted); font-size: var(--font-size-sm); }
+.stack { display: flex; flex-direction: column; gap: var(--space-md); }
+.center { text-align: center; }
+
+// Подсказки tippy.js (useHint): в цветах палитры
+.tippy-box[data-theme~='noki'] {
+  background: var(--secondary-600);
+  color: var(--on-primary);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height);
+  box-shadow: var(--shadow);
+
+  .tippy-content { padding: var(--space-sm) var(--space-md); }
+
+  &[data-placement^='top'] > .tippy-arrow::before { border-top-color: var(--secondary-600); }
+  &[data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: var(--secondary-600); }
+}

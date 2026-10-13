@@ -1,0 +1,25 @@
+// Общие цвета маскота и его сцен.
+// Сплошные цвета из токенов: alpha-оттенки (100–300) тут нельзя —
+// перекрывающиеся детали (ушки под телом, лапка поверх предмета) просвечивают.
+
+// Окрас задаётся в NokiMascot переменными --noki-fur-500/400 (конструктор), по умолчанию — primary
+$fur-base: var(--noki-fur-500, var(--primary-500));
+$fur: color-mix(in srgb, #{$fur-base} 28%, #fff);
+$fur-inner: color-mix(in srgb, #{$fur-base} 45%, #fff);
+$fur-stroke: var(--noki-fur-400, var(--primary-400));
+$ink: #3d2734; // глаза и линии одинаковые в обеих темах
+$shine: #fff;
+
+@mixin fur {
+  fill: $fur;
+  stroke: $fur-stroke;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+@mixin ink-line($width: 2.6) {
+  fill: none;
+  stroke: $ink;
+  stroke-width: $width;
+  stroke-linecap: round;
+}
