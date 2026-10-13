@@ -17,17 +17,54 @@ export interface DayHours {
 /** Часы по умолчанию для нового дня */
 export const DEFAULT_HOURS: DayHours = { from: '10:00', to: '19:00', pauses: [] }
 
+/** Шаг времени в пикерах часов, минуты */
+export const HOURS_STEP = 15
+
 /**
- * Предложить следующий перерыв: час после последнего перерыва (или в середине дня), в пределах дня.
- * @param h часы дня
+ * Минуты от начала суток → "HH:MM".
+ * @param m минуты
  */
-export function suggestPause(h: DayHours): TimeRange {
+function fromMinutes(m: number): string {
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+}
+
+/**
+ * Перерывы по времени начала.
+ * @param pauses перерывы
+ */
+export function sortPauses(pauses: TimeRange[]): TimeRange[] {
+  return [...pauses].sort((x, y) => toMinutes(x[0]) - toMinutes(y[0]))
+}
+
+/**
+ * Предложить новый перерыв: в самом длинном рабочем отрезке дня, ближе к его середине, по сетке пикера.
+ * Перерыв всегда проходит `validateDayHours`: внутри дня и не касается других перерывов.
+ * @param h часы дня
+ * @returns перерыв или null, если места для него нет
+ */
+export function suggestPause(h: DayHours): TimeRange | null {
   const start = toMinutes(h.from)
   const end = toMinutes(h.to)
-  const after = h.pauses.length ? toMinutes(h.pauses[h.pauses.length - 1][1]) + 60 : Math.round((start + end) / 2 / 60) * 60
-  const a = Math.min(Math.max(after, start + 30), end - 60)
-  const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
-  return [fmt(a), fmt(Math.min(a + 60, end - 30))]
+  if (end <= start) return null
+  // рабочие отрезки между перерывами
+  const bounds = [start, ...sortPauses(h.pauses).flatMap(([a, b]) => [toMinutes(a), toMinutes(b)]), end]
+  let best: [number, number] | null = null
+  for (let i = 0; i < bounds.length; i += 2) {
+    const seg: [number, number] = [bounds[i], bounds[i + 1]]
+    if (!best || seg[1] - seg[0] > best[1] - best[0]) best = seg
+  }
+  if (!best) return null
+  // перерыв строго внутри отрезка: с каждой стороны остаётся хотя бы один шаг работы
+  const lo = Math.ceil((best[0] + 1) / HOURS_STEP) * HOURS_STEP
+  const hi = Math.floor((best[1] - 1) / HOURS_STEP) * HOURS_STEP
+  const room = hi - lo
+  if (room < 2 * HOURS_STEP) return null
+  const duration = room >= 60 ? 60 : 30
+  const mid = (lo + hi - duration) / 2
+  // ровный час, если он помещается, иначе ближайшее деление сетки
+  const hour = Math.round(mid / 60) * 60
+  const a = hour >= lo && hour + duration <= hi ? hour : Math.max(lo, Math.round(mid / HOURS_STEP) * HOURS_STEP)
+  return [fromMinutes(a), fromMinutes(a + duration)]
 }
 
 /**
@@ -35,7 +72,7 @@ export function suggestPause(h: DayHours): TimeRange {
  * @param h часы дня
  */
 export function toRanges(h: DayHours): TimeRange[] {
-  const pauses = [...h.pauses].sort((x, y) => toMinutes(x[0]) - toMinutes(y[0]))
+  const pauses = sortPauses(h.pauses)
   const ranges: TimeRange[] = []
   let cursor = h.from
   for (const [a, b] of pauses) {
@@ -69,7 +106,7 @@ export function validateDayHours(h: DayHours): DayHoursError {
   if (!h.from || !h.to || toMinutes(h.to) <= toMinutes(h.from)) return 'onboarding.hours.invalid'
   const start = toMinutes(h.from)
   const end = toMinutes(h.to)
-  const sorted = [...h.pauses].sort((x, y) => toMinutes(x[0]) - toMinutes(y[0]))
+  const sorted = sortPauses(h.pauses)
   for (const [a, b] of sorted) {
     if (!a || !b || toMinutes(a) <= start || toMinutes(b) >= end || toMinutes(b) <= toMinutes(a)) return 'hours.pauseInvalid'
   }
@@ -106,9 +143,26 @@ export function rangesKey(ranges: TimeRange[]): string {
 /** Какое поле часов дня редактируется: начало, конец или край перерыва с индексом */
 export type HoursField = 'from' | 'to' | { pause: number; side: 0 | 1 }
 
+/** Длительность перерыва, если у старого перерыва она неверная (конец не позже начала) */
+const FALLBACK_PAUSE_MIN = 30
+
+/**
+ * Поставить в перерыв новое время. Начало переносит весь перерыв с той же длительностью
+ * (так перерыв можно передвинуть через соседний), конец меняет длительность.
+ * @param pause перерыв
+ * @param side какой край меняется: 0 — начало, 1 — конец
+ * @param v время "HH:MM"
+ */
+export function setPauseEdge(pause: TimeRange, side: 0 | 1, v: string): TimeRange {
+  if (side === 1) return [pause[0], v]
+  const length = toMinutes(pause[1]) - toMinutes(pause[0])
+  return [v, fromMinutes(toMinutes(v) + (length > 0 ? length : FALLBACK_PAUSE_MIN))]
+}
+
 /**
  * Можно ли поставить время в поле так, чтобы не нарушить правила `validateDayHours`.
- * Проверяются только связи самого поля, поэтому уже ошибочные соседние перерывы не блокируют всё подряд.
+ * Проверяются только связи самого поля. Перерывы, которые уже пересекаются с редактируемым
+ * (старые ошибочные данные), не блокируют выбор, иначе такой перерыв было бы не исправить.
  * @param h часы дня
  * @param field редактируемое поле
  * @param v время "HH:MM"
@@ -120,9 +174,12 @@ export function allowedTime(h: DayHours, field: HoursField, v: string): boolean 
   const pauses = h.pauses.map(([a, b]) => [toMinutes(a), toMinutes(b)] as const)
   if (field === 'from') return m < to && pauses.every(([a]) => a > m)
   if (field === 'to') return m > from && pauses.every(([, b]) => b < m)
-  const own = pauses[field.pause]
-  const [a, b] = field.side === 0 ? [m, own[1]] : [own[0], m]
+  const [oa, ob] = pauses[field.pause]
+  const next = setPauseEdge(h.pauses[field.pause], field.side, v)
+  const a = toMinutes(next[0])
+  const b = toMinutes(next[1])
   if (a <= from || b >= to || b <= a) return false
   // касание тоже считается пересечением — как в validateDayHours
-  return pauses.every(([pa, pb], j) => j === field.pause || b < pa || a > pb)
+  const touches = (pa: number, pb: number, x: number, y: number) => !(y < pa || x > pb)
+  return pauses.every(([pa, pb], j) => j === field.pause || touches(pa, pb, oa, ob) || !touches(pa, pb, a, b))
 }

@@ -10,7 +10,7 @@
     </div>
 
     <ul class="days">
-      <li v-for="d in WEEKDAYS" :key="d" :class="{ off: !hoursOf(d), invalid: invalidDays?.includes(d) }">
+      <li v-for="d in WEEKDAYS" :key="d" :class="{ off: !hoursOf(d), invalid: invalidDays?.includes(d) || !!errorOf(d) }">
         <div class="main">
           <NokiSwitch :model-value="!!hoursOf(d)" :label="t(`weekday.short.${d}`)" @update:model-value="setDay(d, !!$event)" />
           <div v-if="hoursOf(d)" class="times">
@@ -35,6 +35,7 @@
 
         <!-- перерывы: сколько угодно -->
         <PauseList v-if="hoursOf(d)" :model-value="hoursOf(d)!" @update:model-value="write(d, $event)" />
+        <p v-if="errorOf(d)" class="error">{{ t(errorOf(d)!) }}</p>
       </li>
     </ul>
   </div>
@@ -47,7 +48,7 @@ import { WEEKDAYS, type Weekday, type WorkHours } from '@/api/types'
 import NokiSwitch from '@/components/ui/NokiSwitch.vue'
 import PauseList from '@/components/master/PauseList.vue'
 import NokiTimePicker from '@/components/ui/NokiTimePicker.vue'
-import { allowedTime, DEFAULT_HOURS, fromRanges, toRanges, type DayHours } from '@/utils/hours'
+import { allowedTime, DEFAULT_HOURS, fromRanges, toRanges, validateDayHours, type DayHours, type DayHoursError } from '@/utils/hours'
 import { haptic } from '@/telegram'
 
 /** Пропсы WorkHoursEditor */
@@ -61,13 +62,21 @@ const model = defineModel<WorkHours>({ required: true })
 defineProps<Props>()
 const { t } = useI18n()
 
-
 /**
  * Часы дня недели или null — выходной.
  * @param d день недели
  */
 function hoursOf(d: Weekday): DayHours | null {
   return fromRanges(model.value[d])
+}
+
+/**
+ * Что не так с часами дня (ключ i18n) или null.
+ * @param d день недели
+ */
+function errorOf(d: Weekday): DayHoursError {
+  const h = hoursOf(d)
+  return h ? validateDayHours(h) : null
 }
 
 function write(d: Weekday, h: DayHours | null) {
@@ -178,4 +187,10 @@ function preset(days: Weekday[]) {
 
 .dash { color: var(--text-muted); }
 .hint { margin: 0; }
+
+.error {
+  margin: 0;
+  color: var(--danger-500);
+  font-size: var(--font-size-sm);
+}
 </style>

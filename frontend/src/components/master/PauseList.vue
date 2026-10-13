@@ -23,31 +23,35 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
       </button>
     </div>
-    <button type="button" class="add" @click="add">{{ t('hours.addPause') }}</button>
+    <button type="button" class="add" :disabled="!next" @click="add">{{ t('hours.addPause') }}</button>
   </div>
 </template>
 
 <script setup lang="ts">
 // Перерывы рабочего дня: сколько угодно, у каждого своё время и крестик
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { TimeRange } from '@/api/types'
 import NokiTimePicker from '@/components/ui/NokiTimePicker.vue'
-import { allowedTime, suggestPause, type DayHours } from '@/utils/hours'
+import { allowedTime, setPauseEdge, sortPauses, suggestPause, type DayHours } from '@/utils/hours'
 import { haptic } from '@/telegram'
 
 /** Часы дня: меняются только перерывы, начало и конец нужны для подсказки времени нового перерыва */
 const model = defineModel<DayHours>({ required: true })
 const { t } = useI18n()
 
-function set(i: number, idx: 0 | 1, value: string) {
-  const pauses = model.value.pauses.map((p) => [p[0], p[1]] as TimeRange)
-  pauses[i][idx] = value
-  model.value = { ...model.value, pauses }
+/** Каким будет следующий перерыв; null — места в дне больше нет, кнопка неактивна */
+const next = computed(() => suggestPause(model.value))
+
+// перерывы всегда по порядку: так же они лягут в данные (toRanges), и список не переставится после сохранения
+function set(i: number, side: 0 | 1, value: string) {
+  const pauses = model.value.pauses.map((p, j) => (j === i ? setPauseEdge(p, side, value) : p))
+  model.value = { ...model.value, pauses: sortPauses(pauses) }
 }
 
 function add() {
+  if (!next.value) return
   haptic.tap()
-  model.value = { ...model.value, pauses: [...model.value.pauses, suggestPause(model.value)] }
+  model.value = { ...model.value, pauses: sortPauses([...model.value.pauses, next.value]) }
 }
 
 function remove(i: number) {
@@ -109,5 +113,11 @@ function remove(i: number) {
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+
+  &:disabled {
+    color: var(--text-muted);
+    text-decoration: none;
+    cursor: default;
+  }
 }
 </style>

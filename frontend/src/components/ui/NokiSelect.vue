@@ -55,6 +55,9 @@ const model = defineModel<string>()
 
 select {
   flex: 1;
+  // без этого длинный вариант (название пояса) растягивает поле шире экрана
+  min-width: 0;
+  text-overflow: ellipsis;
   appearance: none;
   border: 0;
   outline: 0;
