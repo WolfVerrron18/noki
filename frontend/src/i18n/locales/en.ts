@@ -2,6 +2,8 @@ import type { Messages } from '@/i18n'
 
 const en: Messages = {
   common: {
+    decrease: 'Decrease',
+    increase: 'Increase',
     retry: 'Try again',
     loading: 'Noki is getting everything ready…',
     back: 'Back',
@@ -102,6 +104,7 @@ const en: Messages = {
     short: { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' },
   },
   duration: {
+    minutes: 'min',
     min: '{m} min',
     hours: '{h} h',
     hoursMin: '{h} h {m} min',

@@ -22,7 +22,7 @@ interface Props {
   /** Неизменяемый текст слева от ввода */
   prefix?: string
   /** HTML-тип поля, по умолчанию text */
-  type?: 'text' | 'number' | 'time' | 'tel'
+  type?: 'text' | 'time' | 'tel'
   /** Какую клавиатуру показать на телефоне */
   inputmode?: 'text' | 'numeric' | 'tel'
   /** Текст-пример в пустом поле */

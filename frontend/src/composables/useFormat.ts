@@ -31,6 +31,12 @@ export function useFormat() {
     return new Intl.NumberFormat(locale.value, { style: 'currency', currency: CURRENCY, maximumFractionDigits: 0 }).format(value)
   }
 
+  /** Знак валюты для подписи у поля цены: «₽» */
+  function currencySymbol(): string {
+    const parts = new Intl.NumberFormat(locale.value, { style: 'currency', currency: CURRENCY, currencyDisplay: 'narrowSymbol' }).formatToParts(0)
+    return parts.find((p) => p.type === 'currency')?.value ?? CURRENCY
+  }
+
   /**
    * Время «10:30» в поясе мастера.
    * @param iso момент, ISO в UTC
@@ -70,5 +76,5 @@ export function useFormat() {
     return text.charAt(0).toUpperCase() + text.slice(1)
   }
 
-  return { duration, price, time, dateLong, dayParts, dayTitle }
+  return { duration, price, currencySymbol, time, dateLong, dayParts, dayTitle }
 }

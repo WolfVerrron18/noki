@@ -12,19 +12,20 @@
     </div>
 
     <NokiSegmented v-model="durationPick" :label="t('services.duration')" :options="durationOptions" />
-    <NokiInput
+    <NokiNumberInput
       v-if="durationPick === CUSTOM"
       v-model="customDuration"
-      type="number"
-      inputmode="numeric"
+      :suffix="t('duration.minutes')"
+      :step="5"
+      :min="5"
+      :max="600"
       :error="errors.duration"
     />
     <p v-else-if="errors.duration" class="error">{{ errors.duration }}</p>
 
-    <NokiInput
+    <NokiNumberInput
       v-model="form.price"
-      type="number"
-      inputmode="numeric"
+      :suffix="fmt.currencySymbol()"
       :label="t('services.price')"
       :placeholder="t('services.pricePlaceholder')"
       :error="errors.price"
@@ -53,6 +54,7 @@ import { useI18n } from 'vue-i18n'
 import NokiMainButton from '@/components/ui/NokiMainButton.vue'
 import NokiInput from '@/components/ui/NokiInput.vue'
 import NokiTextarea from '@/components/ui/NokiTextarea.vue'
+import NokiNumberInput from '@/components/ui/NokiNumberInput.vue'
 import NokiSegmented from '@/components/ui/NokiSegmented.vue'
 import NokiSwitch from '@/components/ui/NokiSwitch.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
