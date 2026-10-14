@@ -1,0 +1,383 @@
+<title>Данные Nidoki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: одна колонка-справочник; на каждую таблицу — карточка «как это видит человек» рядом со списком полей */
+  :root {
+    --bg: #fff8fb;
+    --surface: #ffffff;
+    --ink: #3a2a3e;
+    --muted: #8a7488;
+    --line: #f3dbe6;
+    --accent: #e0518b;
+    --accent-soft: #fde4ee;
+    --money: #1f8f6e;
+    --money-soft: #dcf3ea;
+    --private: #b06a12;
+    --private-soft: #fdeed6;
+    --tech: #6b6e9e;
+    --tech-soft: #e8e9f7;
+    --shadow: 0 1px 2px rgba(120, 40, 80, .06), 0 6px 20px rgba(120, 40, 80, .06);
+    --font-display: 'Nunito', system-ui, sans-serif;
+    --font-body: 'Nunito', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1f161f; --surface: #2a1f2a; --ink: #f6e9f0; --muted: #b9a3b4; --line: #43303f;
+      --accent: #ff8ab6; --accent-soft: #4a2537; --money: #5fd3ad; --money-soft: #173d31;
+      --private: #f2b45f; --private-soft: #44321a; --tech: #aeb1ea; --tech-soft: #2c2d48;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 20px rgba(0, 0, 0, .25);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1f161f; --surface: #2a1f2a; --ink: #f6e9f0; --muted: #b9a3b4; --line: #43303f;
+    --accent: #ff8ab6; --accent-soft: #4a2537; --money: #5fd3ad; --money-soft: #173d31;
+    --private: #f2b45f; --private-soft: #44321a; --tech: #aeb1ea; --tech-soft: #2c2d48;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 20px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+  .page { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; display: grid; gap: 56px; }
+
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.2; }
+  h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 900; letter-spacing: -.01em; }
+  h2 { font-size: 26px; font-weight: 900; }
+  h3 { font-size: 18px; font-weight: 800; }
+  p { margin: 0; max-width: 68ch; }
+  code, .mono { font-family: var(--font-mono); font-size: .86em; }
+
+  header { display: grid; gap: 16px; }
+  .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .lead { font-size: 18px; color: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .tag { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+  .tag.money { background: var(--money-soft); color: var(--money); }
+  .tag.private { background: var(--private-soft); color: var(--private); }
+  .tag.tech { background: var(--tech-soft); color: var(--tech); }
+
+  /* схема связей */
+  .map { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .map a { text-decoration: none; color: inherit; background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 14px; display: grid; gap: 2px; min-width: 0; }
+  .map a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .map b { font-family: var(--font-mono); font-size: 14px; color: var(--accent); }
+  .map small { color: var(--muted); font-size: 13px; }
+  .arrow { color: var(--muted); font-size: 13px; }
+  .map .aside { border-style: dashed; }
+
+  /* таблица */
+  .table { display: grid; gap: 20px; scroll-margin-top: 16px; }
+  .table-head { display: grid; gap: 6px; }
+  .table-head h2 code { font-size: .8em; color: var(--accent); font-weight: 600; }
+  .table-body { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 780px) { .table-body { grid-template-columns: minmax(0, 1fr); } }
+
+  .sample { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 18px; display: grid; gap: 10px; }
+  .sample .cap { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .sample .big { font-size: 20px; font-weight: 900; }
+  .sample .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+  .sample .row span:first-child { color: var(--muted); }
+  .sample .row span:last-child { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { justify-self: start; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 13px; }
+
+  .fields { overflow-x: auto; border: 1.5px solid var(--line); border-radius: 16px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; }
+  th { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+  td:first-child { font-family: var(--font-mono); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  td:nth-child(2) { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); max-width: 220px; overflow-wrap: anywhere; }
+  td .tag { margin-left: 6px; }
+
+  /* аналитика */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .stat { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 16px; display: grid; gap: 4px; }
+  .stat b { font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 14px; }
+  .stat small { color: var(--muted); font-size: 12px; }
+  .bars { display: grid; gap: 8px; }
+  .bar { display: grid; grid-template-columns: minmax(0, 160px) minmax(0, 1fr) 80px; gap: 10px; align-items: center; font-size: 14px; }
+  .bar .track { height: 12px; border-radius: 999px; background: var(--money-soft); overflow: hidden; }
+  .bar .fill { height: 100%; border-radius: 999px; background: var(--money); }
+  .bar span:last-child { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+  pre { margin: 0; overflow-x: auto; background: var(--surface); border: 1.5px solid var(--line); border-radius: 16px; padding: 16px; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; }
+  .note { color: var(--muted); font-size: 14px; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .list { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  section > .stack { display: grid; gap: 16px; }
+</style>
+
+<main class="page">
+  <header>
+    <span class="eyebrow">Бэкенд · PostgreSQL</span>
+    <h1>Что хранит Nidoki</h1>
+    <p class="lead">Пять таблиц. Ниже по каждой: как запись выглядит для человека, какие у неё поля и зачем каждое нужно. Примеры придуманные.</p>
+    <div class="legend">
+      <span><i class="tag money">деньги</i> нужно для аналитики мастера</span>
+      <span><i class="tag private">личное</i> данные человека</span>
+      <span><i class="tag tech">служебное</i> для работы приложения</span>
+    </div>
+    <div class="map" aria-label="Связи таблиц">
+      <a href="#users"><b>users</b><small>кто вошёл</small></a>
+      <span class="arrow">→ один профиль →</span>
+      <a href="#masters"><b>masters</b><small>мастер</small></a>
+      <span class="arrow">→ много →</span>
+      <a href="#services"><b>services</b><small>услуги</small></a>
+      <span class="arrow">→ много →</span>
+      <a href="#appointments"><b>appointments</b><small>записи</small></a>
+      <a href="#feedback" class="aside"><b>feedback</b><small>отзывы, отдельно</small></a>
+    </div>
+  </header>
+
+  <!-- users -->
+  <section class="table" id="users">
+    <div class="table-head">
+      <h2>Пользователи <code>users</code></h2>
+      <p>Каждый, кто открыл мини-апп через Telegram. Мастер и клиентка хранятся одинаково: один человек может быть и тем, и другим. Паролей нет, вход только подписью Telegram.</p>
+    </div>
+    <div class="table-body">
+      <div class="sample">
+        <span class="cap">Пример</span>
+        <span class="big">Анна Смирнова</span>
+        <div class="row"><span>Telegram id</span><span>482 117 903</span></div>
+        <div class="row"><span>Язык</span><span>ru</span></div>
+        <div class="row"><span>Впервые зашла</span><span>3 окт 2026</span></div>
+      </div>
+      <div class="fields"><table>
+        <thead><tr><th>Поле</th><th>Пример</th><th>Зачем</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>9f1c…a2</td><td>Внутренний номер <i class="tag tech">служебное</i></td></tr>
+          <tr><td>telegram_id</td><td>482117903</td><td>Узнать человека при следующем входе, писать ему от бота <i class="tag private">личное</i></td></tr>
+          <tr><td>name</td><td>Анна Смирнова</td><td>Имя из профиля Telegram, обновляется при каждом входе <i class="tag private">личное</i></td></tr>
+          <tr><td>language_code</td><td>ru</td><td>На каком языке бот пишет уведомления</td></tr>
+          <tr><td>created_at</td><td>2026-10-03 12:40</td><td>Когда впервые зашла</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- masters -->
+  <section class="table" id="masters">
+    <div class="table-head">
+      <h2>Мастера <code>masters</code></h2>
+      <p>Профиль мастера: страница записи, график, оформление. У одного пользователя не больше одного профиля.</p>
+    </div>
+    <div class="table-body">
+      <div class="sample">
+        <span class="cap">Пример</span>
+        <span class="big">Студия Анны</span>
+        <span class="pill">t.me/…?startapp=anna_brows</span>
+        <div class="row"><span>Пояс</span><span>Europe/Samara</span></div>
+        <div class="row"><span>График</span><span>каждую неделю</span></div>
+        <div class="row"><span>Пн–Пт</span><span>10:00–19:00</span></div>
+        <div class="row"><span>Запись</span><span>по часам, шаг 30 мин</span></div>
+        <div class="row"><span>Тема</span><span>Лаванда</span></div>
+      </div>
+      <div class="fields"><table>
+        <thead><tr><th>Поле</th><th>Пример</th><th>Зачем</th></tr></thead>
+        <tbody>
+          <tr><td>user_id</td><td>9f1c…a2</td><td>Чей профиль: менять его может только владелица <i class="tag tech">служебное</i></td></tr>
+          <tr><td>name</td><td>Студия Анны</td><td>Имя, которое видят клиентки</td></tr>
+          <tr><td>slug</td><td>anna_brows</td><td>Адрес ссылки для записи, уникальный</td></tr>
+          <tr><td>timezone</td><td>Europe/Samara</td><td>Всё время показывается в поясе мастера, а не телефона</td></tr>
+          <tr><td>currency</td><td>RUB</td><td>Валюта цен, чтобы суммы в аналитике были в правильных деньгах <i class="tag money">деньги</i></td></tr>
+          <tr><td>schedule_mode</td><td>weekly</td><td>График: каждую неделю или по датам</td></tr>
+          <tr><td>work_hours</td><td>{"1":[["10:00","19:00"]]}</td><td>Часы по дням недели, перерывы — промежутки между интервалами</td></tr>
+          <tr><td>day_overrides</td><td>{"2026-10-20":[]}</td><td>Часы на конкретные даты: выходной, короткий день, рабочие дни в режиме «по датам»</td></tr>
+          <tr><td>hour_templates</td><td>[{"ranges":[…]}]</td><td>Свои шаблоны дня для выбора в одно касание</td></tr>
+          <tr><td>slot_mode</td><td>grid</td><td>Как записываются: любое время в часах или точные времена</td></tr>
+          <tr><td>slot_step_min</td><td>30</td><td>Шаг начала записи: 15 или 30 минут</td></tr>
+          <tr><td>work_slots, slot_overrides, slot_templates</td><td>{"1":["10:30","13:00"]}</td><td>То же для режима «точное время»</td></tr>
+          <tr><td>mascot</td><td>{"head":"crown"}</td><td>Наряд Ноки на странице мастера</td></tr>
+          <tr><td>theme</td><td>lavender</td><td>Цвет кабинета и страницы записи</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- services -->
+  <section class="table" id="services">
+    <div class="table-head">
+      <h2>Услуги <code>services</code></h2>
+      <p>Услуги мастера. Не удаляются насовсем: на них ссылаются прошлые записи, поэтому удаление только прячет услугу.</p>
+    </div>
+    <div class="table-body">
+      <div class="sample">
+        <span class="cap">Пример</span>
+        <span class="big">Оформление бровей</span>
+        <div class="row"><span>Вид</span><span>Брови</span></div>
+        <div class="row"><span>Длительность</span><span>1 ч</span></div>
+        <div class="row"><span>Цена</span><span>1 800 ₽</span></div>
+        <div class="row"><span>Видна клиенткам</span><span>да</span></div>
+      </div>
+      <div class="fields"><table>
+        <thead><tr><th>Поле</th><th>Пример</th><th>Зачем</th></tr></thead>
+        <tbody>
+          <tr><td>name</td><td>Оформление бровей</td><td>Название</td></tr>
+          <tr><td>category</td><td>brows</td><td>Вид услуги: иконка и группировка</td></tr>
+          <tr><td>duration_min</td><td>60</td><td>Сколько времени занимает: от этого считаются свободные окна</td></tr>
+          <tr><td>price</td><td>1800</td><td>Текущая цена, целое число в валюте мастера <i class="tag money">деньги</i></td></tr>
+          <tr><td>description</td><td>Коррекция и окрашивание</td><td>Что входит, до 300 символов</td></tr>
+          <tr><td>is_active</td><td>true</td><td>Видна ли клиенткам</td></tr>
+          <tr><td>archived</td><td>false</td><td>Удалена мастером: пропала из списков, но прошлые записи на неё остаются</td></tr>
+          <tr><td>sort</td><td>0</td><td>Порядок в списке, мастер меняет перетаскиванием</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- appointments -->
+  <section class="table" id="appointments">
+    <div class="table-head">
+      <h2>Записи <code>appointments</code></h2>
+      <p>Главная таблица и основа аналитики. В запись копируются название, цена и длительность услуги: если мастер потом поднимет цену или удалит услугу, прошлая выручка не изменится.</p>
+    </div>
+    <div class="table-body">
+      <div class="sample">
+        <span class="cap">Пример</span>
+        <span class="big">Мария, 17 окт 14:00</span>
+        <span class="pill">выполнена</span>
+        <div class="row"><span>Услуга</span><span>Оформление бровей</span></div>
+        <div class="row"><span>Цена в записи</span><span>1 800 ₽</span></div>
+        <div class="row"><span>Телефон</span><span>+7 927 057 60 65</span></div>
+        <div class="row"><span>Заметка</span><span>Хочу чуть темнее</span></div>
+        <div class="row"><span>Кто записал</span><span>сама, в Telegram</span></div>
+      </div>
+      <div class="fields"><table>
+        <thead><tr><th>Поле</th><th>Пример</th><th>Зачем</th></tr></thead>
+        <tbody>
+          <tr><td>master_id, service_id</td><td>…</td><td>К кому и на какую услугу <i class="tag tech">служебное</i></td></tr>
+          <tr><td>service_name</td><td>Оформление бровей</td><td>Название на момент записи</td></tr>
+          <tr><td>price</td><td>1800</td><td>Цена на момент записи <i class="tag money">деньги</i></td></tr>
+          <tr><td>currency</td><td>RUB</td><td>Валюта этой цены <i class="tag money">деньги</i></td></tr>
+          <tr><td>duration_min</td><td>60</td><td>Длительность на момент записи: загрузка мастера по часам <i class="tag money">деньги</i></td></tr>
+          <tr><td>start_at, end_at</td><td>2026-10-17 10:00 UTC</td><td>Начало и конец, момент в UTC. Две действующие записи мастера не могут пересечься: это проверяет сама база</td></tr>
+          <tr><td>client_name</td><td>Мария</td><td>Как зовут клиентку <i class="tag private">личное</i></td></tr>
+          <tr><td>client_phone</td><td>+79270576065</td><td>Телефон в одном формате (E.164). По нему же узнаём постоянных клиенток <i class="tag private">личное</i></td></tr>
+          <tr><td>client_telegram_id</td><td>551203877</td><td>Есть, если записалась сама: «Мои записи» и уведомления от бота <i class="tag private">личное</i></td></tr>
+          <tr><td>note</td><td>Хочу чуть темнее</td><td>Пожелания, до 300 символов</td></tr>
+          <tr><td>status</td><td>done</td><td>booked — ждёт, done — выполнена, cancelled — отменена. Выручка — только done <i class="tag money">деньги</i></td></tr>
+          <tr><td>cancelled_by</td><td>client</td><td>Кто отменил: клиентка или мастер <i class="tag money">деньги</i></td></tr>
+          <tr><td>cancelled_at, done_at</td><td>2026-10-17 11:05</td><td>Когда отменили или отметили выполненной: отмены «в последний момент» <i class="tag money">деньги</i></td></tr>
+          <tr><td>source</td><td>client</td><td>Записалась сама или мастер внесла вручную: сколько клиенток приводит приложение <i class="tag money">деньги</i></td></tr>
+          <tr><td>reminder_sent</td><td>true</td><td>Бот уже напомнил о записи <i class="tag tech">служебное</i></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- feedback -->
+  <section class="table" id="feedback">
+    <div class="table-head">
+      <h2>Отзывы <code>feedback</code></h2>
+      <p>Идеи и сообщения об ошибках из раздела «Отзыв». Бот пересылает их разработчику.</p>
+    </div>
+    <div class="fields"><table>
+      <thead><tr><th>Поле</th><th>Пример</th><th>Зачем</th></tr></thead>
+      <tbody>
+        <tr><td>author_telegram_id</td><td>482117903</td><td>Кому ответить <i class="tag private">личное</i></td></tr>
+        <tr><td>role</td><td>master</td><td>Пишет мастер или клиентка</td></tr>
+        <tr><td>text</td><td>Хочу видеть выручку за месяц</td><td>Сам текст, до 2000 символов</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- analytics -->
+  <section id="analytics">
+    <div class="stack">
+      <span class="eyebrow">Что из этого посчитаем</span>
+      <h2>Аналитика мастера на примере октября</h2>
+      <p>Цифры ниже посчитаны прямо на этой странице из десяти придуманных записей, так же, как их посчитает сервер.</p>
+      <div class="stats" id="stats"></div>
+      <h3>Выручка по услугам</h3>
+      <div class="bars" id="bars"></div>
+      <h3>Так это выглядит в базе</h3>
+      <pre id="sql">SELECT service_name,
+       count(*)   AS visits,
+       sum(price) AS revenue
+FROM appointments
+WHERE master_id = :master
+  AND status = 'done'
+  AND start_at &gt;= '2026-10-01' AND start_at &lt; '2026-11-01'
+GROUP BY service_name
+ORDER BY revenue DESC;</pre>
+      <p class="note">Позже можно добавить: загрузку по часам и дням недели, «ушедших» клиенток (давно не приходили), прогноз выручки по будущим записям.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="two">
+      <div class="stack">
+        <h3>Чего мы не храним</h3>
+        <ul class="list">
+          <li>Пароли: вход только через подпись Telegram.</li>
+          <li>Банковские карты и оплаты.</li>
+          <li>Фото и контакты из телефона.</li>
+          <li>Телефон клиентки, если она его не указала.</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <h3>Договорённости</h3>
+        <ul class="list">
+          <li>Время — момент в UTC, показ в поясе мастера.</li>
+          <li>Деньги — целые числа в валюте мастера, без копеек и дробей.</li>
+          <li>Телефон — всегда в формате +7…, как бы его ни ввели.</li>
+          <li>Пересечения записей запрещает сама база, даже при одновременных запросах.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Десять придуманных записей за октябрь: те же поля, что в appointments
+  const rows = [
+    { service: 'Оформление бровей', price: 1800, status: 'done', phone: '+79270576065', source: 'client' },
+    { service: 'Оформление бровей', price: 1800, status: 'done', phone: '+79171112233', source: 'client' },
+    { service: 'Ламинирование ресниц', price: 2500, status: 'done', phone: '+79270576065', source: 'client' },
+    { service: 'Ламинирование ресниц', price: 2500, status: 'cancelled', cancelledBy: 'client', phone: '+79035550101', source: 'client' },
+    { service: 'Вечерний макияж', price: 3500, status: 'done', phone: '+79035550101', source: 'manual' },
+    { service: 'Оформление бровей', price: 1800, status: 'done', phone: '+79270576065', source: 'manual' },
+    { service: 'Окрашивание бровей', price: 900, status: 'done', phone: '+79171112233', source: 'client' },
+    { service: 'Вечерний макияж', price: 3500, status: 'cancelled', cancelledBy: 'master', phone: '+79264440011', source: 'client' },
+    { service: 'Ламинирование ресниц', price: 2500, status: 'done', phone: '+79264440011', source: 'client' },
+    { service: 'Оформление бровей', price: 1800, status: 'booked', phone: '+79188887766', source: 'client' },
+  ]
+  const money = (n) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(n)
+  const done = rows.filter((r) => r.status === 'done')
+  const revenue = done.reduce((s, r) => s + r.price, 0)
+  const cancelled = rows.filter((r) => r.status === 'cancelled')
+  const visits = {}
+  for (const r of done) visits[r.phone] = (visits[r.phone] || 0) + 1
+  const clients = Object.keys(visits).length
+  const returning = Object.values(visits).filter((n) => n > 1).length
+  const fromApp = rows.filter((r) => r.source === 'client').length
+  const planned = rows.filter((r) => r.status === 'booked').reduce((s, r) => s + r.price, 0)
+
+  const stats = [
+    [money(revenue), 'выручка', `${done.length} выполненных записей`],
+    [money(Math.round(revenue / done.length)), 'средний чек', 'выручка / выполненные'],
+    [`${returning} из ${clients}`, 'постоянные клиентки', 'пришли больше одного раза'],
+    [`${cancelled.length} из ${rows.length}`, 'отмены', cancelled.map((r) => (r.cancelledBy === 'client' ? 'клиентка' : 'мастер')).join(', ')],
+    [`${Math.round((fromApp / rows.length) * 100)}%`, 'записались сами', 'остальных мастер внесла вручную'],
+    [money(planned), 'ещё впереди', 'будущие записи, пока не выполнены'],
+  ]
+  document.getElementById('stats').innerHTML = stats
+    .map(([b, s, n]) => `<div class="stat"><b>${b}</b><span>${s}</span><small>${n}</small></div>`)
+    .join('')
+
+  const byService = {}
+  for (const r of done) byService[r.service] = (byService[r.service] || 0) + r.price
+  const sorted = Object.entries(byService).sort((a, b) => b[1] - a[1])
+  const max = sorted[0][1]
+  document.getElementById('bars').innerHTML = sorted
+    .map(([name, sum]) => `<div class="bar"><span>${name}</span><div class="track"><div class="fill" style="width:${(sum / max) * 100}%"></div></div><span>${money(sum)}</span></div>`)
+    .join('')
+</script>

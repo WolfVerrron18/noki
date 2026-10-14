@@ -288,3 +288,13 @@ export function normalizeSchedule(raw: RawSchedule): Schedule {
     slot_templates: slotTemplates,
   }
 }
+
+/** Текущий пользователь после входа */
+export interface Me {
+  /** id пользователя на сервере */
+  id: string
+  /** Telegram id */
+  telegram_id: number
+  /** Имя из профиля Telegram */
+  name: string
+}

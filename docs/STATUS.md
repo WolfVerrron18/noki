@@ -1,15 +1,15 @@
 # Nidoki — состояние проекта
 
 Рабочая памятка для продолжения работы (для Claude и для себя). Правила кода — в `CLAUDE.md`, здесь — что сделано, что нет и где подводные камни.
-Обновлять в конце каждого этапа. Последнее обновление: 2026-10-14, коммит `1ac243e` (сессия «регресс Кирилла → туры-примеры → демо на Pages → тур-карточка»).
+Обновлять в конце каждого этапа. Последнее обновление: 2026-10-14 (сессия «закреплённые шапка и кнопка → этап 3: бэкенд на Node.js + PostgreSQL»).
 
 ## Кратко
 
-- **Фронтенд**: функционально готов, работает целиком на `mockRepo` (localStorage) в `npm run dev`.
-- **Бэкенд**: есть только вход (`POST /api/tg-auth`) и миграции. Все эндпоинты записи — нет.
-- **Бот, деплой**: не начаты. Есть **демо на GitHub Pages** (режим просмотра без бэкенда) — https://wolfverrron18.github.io/noki/, выкладывается само при пуше в `main` (`.github/workflows/pages.yml`). Pages включены (Settings → Pages → Source: GitHub Actions), первая выкладка прошла.
-- **Репозиторий**: https://github.com/WolfVerrron18/noki (публичный). На момент записи `1ac243e` (тур-карточка) **не запушен** — спросить Кирилла и запушить, тогда обновится демо.
-- Проверки: `cd frontend && npx vue-tsc --noEmit && npm test && npm run build` — всё зелёное (39 тестов).
+- **Фронтенд**: функционально готов. С запущенным сервером ходит в API (`apiRepo`), без него — `mockRepo` (localStorage).
+- **Бэкенд**: этап 3 сделан — Node.js + TS (Hono, Drizzle, zod) + PostgreSQL, локально PGlite. Все эндпоинты `Repo` есть, проверены тестами и вживую с фронтом. Pocketbase убран целиком.
+- **Бот, деплой**: не начаты. Есть **демо на GitHub Pages** (режим просмотра без бэкенда) — https://wolfverrron18.github.io/noki/, выкладывается само при пуше в `main` (`.github/workflows/pages.yml`).
+- **Репозиторий**: https://github.com/WolfVerrron18/noki (публичный).
+- Проверки: `cd frontend && npx vue-tsc --noEmit && npm test` (39 тестов), `cd backend && npm run typecheck && npm test` (33 теста), `npm run build` в обоих.
 
 ## Сделано (по коммитам, от старых к новым)
 
@@ -61,31 +61,34 @@
 
 **Открытый вопрос:** клиентке не предлагаются начала, оставляющие «мёртвые» обрезки (после записи до 12:05 первое начало — 13:30, не 12:30). Это фильтр пустых окон по задумке; Кирилл может захотеть ослабить.
 
+### Этап 3 — бэкенд (сделан)
+
+Почему не Pocketbase: его хуки — урезанный JS (goja) без `Intl` и npm, а dayjs с поясами держится на `Intl` — общий `freeSlots()` там не запустить. Кирилл C# не знает, остались на TS. Решение: свой сервер на Node.js, общий код фронта импортируется как есть.
+
+- **Где что**: `backend/src/app.ts` (сборка), `routes/` (auth, masters, services, appointments, feedback, `access.ts` — права), `lib/` (validation — zod, mappers — строки → типы фронта, slots — `freeSlots` с данными базы, errors, bot), `db/` (client — Postgres/PGlite и миграции, schema — Drizzle), `migrations/0001_init.sql`.
+- **Эндпоинты**: `POST /api/auth/telegram`, `GET /api/health`; `GET /api/masters/me`, `GET /api/masters/slug-free`, `GET /api/masters/by-slug/:slug`, `POST /api/masters`, `PATCH /api/masters/:id`; `GET /api/masters/:id/services[/active]`, `POST /api/masters/:id/services`, `PATCH|DELETE /api/services/:id`, `PUT /api/services/order`; `GET /api/slots`, `POST /api/bookings`, `POST /api/appointments/manual`, `GET /api/bookings/my`, `GET /api/masters/:id/appointments`, `POST /api/appointments/:id/cancel|done`; `POST /api/feedback`.
+- **Данные** (`docs/data-model.html`, опубликовано как артефакт): в записи снимок услуги (название, цена, длительность, валюта), `cancelled_by` / `cancelled_at` / `done_at` — под денежную аналитику; `masters.currency`; пересечения запрещает `EXCLUDE USING gist`.
+- **Фронт**: `api/http.ts` (`api()`, токен), запросы по разделам в `api/services/*`, `apiRepo` их собирает; `pocketbase` удалён из зависимостей.
+- **Шифрование** (обсудили): HTTPS + Postgres только на localhost + шифрованные бэкапы — на этапе деплоя. Шифрование отдельных полей (телефон) пока не делаем: ключ на том же сервере, а поиск постоянных клиенток по телефону сломается.
+
 ## Осталось — по порядку
 
-### Этап 3. Бэкенд (Pocketbase JS-хуки, `backend/pb_hooks/`)
-Фронт уже вызывает эти адреса из `frontend/src/api/pbRepo.ts`; `mockRepo.ts` — эталон поведения (409, проверки отмены/«выполнено»).
-1. `lib/slots.js` — порт `freeSlots` / `rangesFor` / `startsFor` / `isWorkDay` из `frontend/src/utils/slots.ts` один в один (обе ветки: grid и fixed). Общие тест-кейсы (JSON), чтобы фронт и бэк не разошлись.
-2. `GET /api/nidoki/slots?master&service&date[&manual=1]` — busy из `appointments` со `status=booked`; `manual=1` только владельцу, без `MIN_LEAD_MIN` и фильтра окон.
-3. `POST /api/nidoki/book` — тело `BookingInput` (camelCase: masterId, serviceId, startAt, clientName, clientPhone, note). Проверки: услуга активна и не `archived`; начало ∈ `freeSlots()` с теми же настройками; телефон → E.164; `note` ≤ 300; `client_telegram_id` из auth; 409 при конфликте. Записать `service_name` в запись (сейчас имя берётся из expand и пропадает, если услугу скрыли).
-4. `POST /api/nidoki/appointments` (ручная запись мастера), `POST .../:id/cancel` (клиентка — свою, мастер — свою, только пока не началась), `POST .../:id/done` (только мастер, только после начала).
-5. `POST /api/nidoki/feedback` + пересылка разработчику в Telegram.
-6. Валидация JSON-полей мастера в `onRecordCreate/Update` (`work_hours`, `day_overrides`, `hour_templates`, `work_slots`, `slot_overrides`, `slot_templates`, `mascot`, `theme`).
-7. Атомарный `reorderServices` (сейчас N параллельных update).
-8. Миграции уже лежат и ещё ни разу не применялись к живой базе: `1760100000`…`1760400000` — прогнать на локальном Pocketbase.
-
 ### Этап 4. Бот
-- `sendMessage` в `lib/telegram.js`, словари `pb_hooks/i18n/{ru,en}.js`, язык из `language_code` (сохранять в `users`).
-- Уведомления: мастеру — новая запись / отмена (с заметкой), клиентке — подтверждение / отмена.
-- `cronAdd` — напоминание клиентке (поле `reminder_sent` уже есть).
-- `/start`, кнопка меню с мини-аппом.
+- Словари уведомлений `backend/src/i18n/{ru,en}.ts`, язык из `users.language_code` (уже сохраняется при входе). Отправка — `Notifier` (`lib/bot.ts`), уже подключён в `createApp`.
+- Уведомления: мастеру — новая запись / отмена (с заметкой), клиентке — подтверждение / отмена. Хук — после успешного insert/update в `routes/appointments.ts`.
+- Напоминание клиентке по таймеру (поле `reminder_sent` есть): `setInterval` в `index.ts` или cron systemd.
+- `/start`, кнопка меню с мини-аппом, вебхук бота.
 
 ### Этап 5. Деплой
-- `deploy/nginx/nidoki.conf` (статика + proxy `/api` → 8090, существующий сертификат), `deploy/systemd/pocketbase.service`, скрипт сборки/выкладки, раздел в README.
-- README не содержит брифа и плана, хотя CLAUDE.md ссылается — поправить.
+- PostgreSQL на VPS (только localhost), `DATABASE_URL`, `JWT_SECRET`, `TELEGRAM_BOT_TOKEN`; `NIDOKI_DEV_AUTH` не задавать.
+- `deploy/nginx/nidoki.conf` (статика фронта + proxy `/api` → 127.0.0.1:8090, существующий сертификат), `deploy/systemd/nidoki-backend.service` (`node dist/server.mjs`), скрипт сборки/выкладки, шифрованный бэкап `pg_dump` вне сервера.
+- **152-ФЗ** (персональные данные клиенток — имена, телефоны): хранить на сервере в России, политика обработки ПДн и согласие при записи. Проверить до запуска — от этого зависит выбор VPS.
+
+### Аналитика мастера (после бота)
+- Выручка, средний чек, по услугам, постоянные клиентки, отмены, «записались сами» — запросы `GROUP BY` по `appointments` (пример на странице данных). Экран в кабинете мастера.
 
 ### Отложено / обсудить с Кириллом
-- Валюта мастера (`CURRENCY='RUB'` захардкожена в `useFormat.ts`).
+- Валюта мастера: в базе есть (`masters.currency`, в записи — `currency`), на фронте `CURRENCY='RUB'` захардкожена в `useFormat.ts`, выбора валюты нет.
 - Ноки в карточке тура (слот `#noki`); одежда/фоны/цвет шёрстки в Rive (конструктор пока только шапки, Ноки всегда розовый).
 - Иконка «?» в `NokiHelpButton` нарисована без утверждения — показать Кириллу.
 - Туры-примеры уже есть: услуга, часы работы, «по датам» (`robot.ts`, `TourActions`/`TourUndo`). Не сделаны: ручная запись (вставка телефона), оформление, «как тебя видят клиентки» — для последнего нужен тур через несколько экранов (сейчас тур закрывается при смене маршрута).
@@ -104,6 +107,10 @@
 - **Scoped-стили родителя действуют на корень дочернего компонента**: класс `.times` в `WorkHoursEditor` растянул корень `DaySlotsForm`. Корням давать уникальные имена классов.
 - **HMR после правки шаблона и скрипта одновременно** иногда оставляет страницу в сломанном состоянии (ложные «Failed to resolve component»). Делать полную перезагрузку (`navigate`).
 - Удалять файлы через `rm` песочница не даёт без git; теперь git есть — `git rm`.
+- **PGlite**: опции только объектом `new PGlite({ dataDir, extensions })` — форма `new PGlite(undefined, {...})` молча теряет расширения (btree_gist «not available»); родительские папки dataDir он не создаёт.
+- **hono/jwt** проверяет `iat` по системным часам: с подменёнными часами в тестах токены «из будущего» отбрасывались. В токене только `exp`, срок сверяем с `now()` приложения.
+- **`cat > файл` без heredoc** в Bash ждёт stdin и вешает команду — команды с `tsx`/`vitest` запускать с `< /dev/null` и `timeout`.
+- **python** в этом окружении — заглушка Microsoft Store (печатает «Python» и ничего не делает); правки — Edit/sed.
 - **`<label>` вокруг поля с кнопками**: клик в любом месте label «нажимает» первую кнопку внутри (так `NokiNumberInput` уменьшал время от любого тапа). Корень таких полей — `div`, подпись — `<label for>`.
 - vue-scroll-picker: клик по варианту не выбирает его, только прокрутка колёсиком/перетаскивание.
 - **Тесты в браузере-панели**: `requestAnimationFrame` и переходы почти стоят, пока панель не на экране. Тур ждёт конца прокрутки по кадрам — проверять ожиданием в скрипте (`waitFor`), а не фиксированной паузой. Скриншоты при эмуляции высокого телефона рисуют фиксированные элементы не на месте — проверять `getBoundingClientRect` / `elementFromPoint`.
@@ -119,6 +126,6 @@
 - Палитра и темы: `frontend/src/styles/_palette.scss` (`$palettes`, `tinted-neutral`), `_theme.scss`, `styles/palettes.ts`.
 - Светлая/тёмная: `frontend/src/telegram/index.ts` (`applyTheme`, `setColorSchemePref`).
 - Расчёт слотов: `frontend/src/utils/slots.ts` (+ `slots.test.ts`); часы — `utils/hours.ts`; точное время — `utils/daySlots.ts`.
-- Данные: `api/types.ts` (`normalizeSchedule`, `NOTE_MAX`), `api/repo.ts`, `pbRepo.ts`, `mockRepo.ts`.
+- Данные: `api/types.ts` (`normalizeSchedule`, `NOTE_MAX`, `Me`), `api/repo.ts`, `api/http.ts`, `api/services/*` → `apiRepo.ts`, `mockRepo.ts`. Сервер — `backend/` (см. этап 3).
 - Туры: `composables/useTour.ts` (шаги, действия, отмена), `components/ui/NokiTour.vue` (карточка), `components/tour/tours.ts`, `components/tour/robot.ts`.
 - Тестовые данные мока: localStorage `nidoki.mock.v1`. Мок стартует пустым (онбординг); туры помнят «видела» в `nidoki.tour.<id>`.

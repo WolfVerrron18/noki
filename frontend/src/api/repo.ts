@@ -1,8 +1,8 @@
 import type { Appointment, BookingInput, EnumFeedbackRole, Master, MasterInput, Service, ServiceInput } from '@/api/types'
-import { pbRepo } from '@/api/pbRepo'
+import { apiRepo } from '@/api/apiRepo'
 import { mockRepo } from '@/api/mockRepo'
 
-/** Единый интерфейс данных: экраны не знают, откуда данные — Pocketbase или браузер */
+/** Единый интерфейс данных: экраны не знают, откуда данные — наш сервер или браузер */
 export interface Repo {
   /**
    * Профиль мастера текущего пользователя.
@@ -135,7 +135,7 @@ export interface Repo {
   sendFeedback(text: string, role: EnumFeedbackRole): Promise<void>
 }
 
-let current: Repo = pbRepo
+let current: Repo = apiRepo
 
 /** Переключиться на данные в localStorage: режим просмотра без бэкенда */
 export function enableMockRepo() {

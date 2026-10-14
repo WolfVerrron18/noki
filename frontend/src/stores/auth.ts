@@ -1,19 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { pb } from '@/api/pb'
+import { setToken } from '@/api/http'
 import { enableMockRepo } from '@/api/repo'
+import { authApi } from '@/api/services/auth'
+import type { Me } from '@/api/types'
 import { tg, isInTelegram } from '@/telegram'
 import { DEMO_BUILD, PREVIEW_MODE } from '@/demo'
-
-/** Текущий пользователь после входа */
-export interface Me {
-  /** id в коллекции users */
-  id: string
-  /** Telegram id */
-  telegram_id: number
-  /** Имя из профиля Telegram */
-  name: string
-}
 
 export const useAuth = defineStore('auth', () => {
   const me = ref<Me | null>(null)
@@ -35,7 +27,7 @@ export const useAuth = defineStore('auth', () => {
       initData = 'dev'
       try {
         if (DEMO_BUILD) throw new Error('demo')
-        await pb.send('/api/health', {})
+        await authApi.health()
       } catch {
         enableMockRepo()
         me.value = { id: 'preview', telegram_id: 1000001, name: 'Preview' }
@@ -43,12 +35,9 @@ export const useAuth = defineStore('auth', () => {
       }
     }
     try {
-      const res = await pb.send<{ token: string; record: Me }>('/api/tg-auth', {
-        method: 'POST',
-        body: { initData },
-      })
-      pb.authStore.save(res.token, null)
-      me.value = { id: res.record.id, telegram_id: res.record.telegram_id, name: res.record.name }
+      const res = await authApi.login(initData)
+      setToken(res.token)
+      me.value = { id: res.user.id, telegram_id: res.user.telegram_id, name: res.user.name }
     } catch {
       error.value = 'auth.failed'
     }

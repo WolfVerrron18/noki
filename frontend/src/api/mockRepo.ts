@@ -83,7 +83,7 @@ function save() {
 
 const id = () => Math.random().toString(36).slice(2, 12)
 
-/** Ошибка как у Pocketbase: экраны различают её по status */
+/** Ошибка как у сервера: экраны различают её по status */
 function httpError(status: number): Error {
   return Object.assign(new Error(String(status)), { status })
 }
@@ -99,7 +99,7 @@ const booked = (masterId: string) =>
  * @param manual ручная запись мастером: без запаса до начала и без фильтра окон
  */
 function slotsFor(master: Db['masters'][number], service: Service, date: string, manual: boolean): string[] {
-  const active = db.services.filter((s) => s.master === master.id && s.is_active).map((s) => s.duration_min)
+  const active = db.services.filter((s) => s.master === master.id && s.is_active && !s.archived).map((s) => s.duration_min)
   return freeSlots(strip(master), service, date, booked(master.id), {
     leadMin: manual ? 0 : MIN_LEAD_MIN,
     minServiceMin: manual || !active.length ? undefined : Math.min(...active),

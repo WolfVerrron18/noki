@@ -1,5 +1,5 @@
-// Расчёт свободных слотов. Тот же алгоритм будет на сервере (pb_hooks),
-// где запись окончательно проверяется на пересечения.
+// Расчёт свободных слотов. Сервер (backend/src/lib/slots.ts) импортирует этот же файл,
+// там же запись окончательно проверяется, а пересечения запрещает сама база.
 
 import { EnumScheduleMode, EnumSlotMode, type Master, type Service, type TimeRange, type Weekday } from '@/api/types'
 import dayjs from '@/utils/date'
