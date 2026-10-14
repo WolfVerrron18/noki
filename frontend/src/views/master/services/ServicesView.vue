@@ -1,6 +1,11 @@
 <template>
   <div class="stack">
-    <PageHeader :title="t('services.title')" :back="() => router.push({ name: 'master-home' })" />
+    <!-- «Как это работает»: Ноки на примере заполнит форму новой услуги; пример не сохраняется -->
+    <PageHeader
+      :title="t('services.title')"
+      :back="() => router.push({ name: 'master-home' })"
+      :help="() => router.push({ name: 'master-service-new', query: { demo: '1' } })"
+    />
 
     <div v-if="!store.services.length" class="stack center empty">
       <NokiMascot mood="sleepy" :size="120" />
@@ -45,10 +50,6 @@
     <p v-if="toggleError" class="error">{{ toggleError }}</p>
 
     <NokiButton @click="router.push({ name: 'master-service-new' })">{{ t('services.add') }}</NokiButton>
-    <!-- Ноки сам заполнит форму новой услуги на примере; пример не сохраняется -->
-    <button type="button" class="demo-link" @click="router.push({ name: 'master-service-new', query: { demo: '1' } })">
-      {{ t('tour.demo') }}
-    </button>
   </div>
 </template>
 
@@ -203,20 +204,6 @@ async function toggle(s: Service, on: boolean) {
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
-}
-
-.demo-link {
-  align-self: center;
-  padding: var(--space-sm) var(--space-md);
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
 }
 
 .error {

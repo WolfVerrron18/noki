@@ -1,5 +1,10 @@
 <template>
   <div class="stack">
+    <!-- тур по кабинету: справа вверху, как кнопка в шапке других экранов -->
+    <div class="top">
+      <NokiHelpButton @click="tour.start(MASTER_HOME_TOUR)" />
+    </div>
+
     <div class="hello">
       <NokiMascot ref="noki" mood="happy" :size="96" :greet="EnumNokiReaction.Wave" />
       <div>
@@ -49,9 +54,6 @@
     </nav>
 
     <div class="footer-links">
-      <button type="button" class="feedback-link" data-tour="help" @click="tour.start(MASTER_HOME_TOUR)">
-        {{ t('tour.replay') }}
-      </button>
       <button type="button" class="feedback-link" @click="router.push({ name: 'master-feedback' })">
         {{ t('master.menu.feedback') }}
       </button>
@@ -71,6 +73,7 @@ import NokiMascot, { type NokiMascotExpose } from '@/components/mascot/NokiMasco
 import { EnumNokiReaction } from '@/components/mascot/rive/character'
 import NokiButton from '@/components/ui/NokiButton.vue'
 import NokiCard from '@/components/ui/NokiCard.vue'
+import NokiHelpButton from '@/components/ui/NokiHelpButton.vue'
 import { useMaster } from '@/stores/master'
 import { useShareLink } from '@/composables/useShareLink'
 import { DEFAULT_LOOK, EnumMascotHead, type NokiLook } from '@/components/mascot/look'
@@ -128,6 +131,13 @@ async function onCopy() {
   gap: var(--space-md);
 
   h1, p { margin: 0; }
+}
+
+.top {
+  display: flex;
+  justify-content: flex-end;
+  // не раздвигаем экран: строка с кнопкой заходит под приветствие
+  margin-bottom: calc(-1 * var(--space-md));
 }
 
 .link-card {

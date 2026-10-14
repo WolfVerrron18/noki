@@ -1,6 +1,6 @@
 <template>
   <div class="stack">
-    <PageHeader :title="t('hours.title')" :back="() => router.back()" />
+    <PageHeader :title="t('hours.title')" :back="() => router.back()" :help="() => startDemo(demoTour(), false)" />
 
     <div class="intro">
       <NokiMascot :mood="ctx.hasError.value ? 'sad' : 'happy'" :size="96" />
@@ -10,9 +10,6 @@
     <HoursFields ref="hoursFields" :ctx="ctx" />
 
     <p v-if="ctx.errors.save" class="error">{{ ctx.errors.save }}</p>
-
-    <!-- Ноки сам настроит часы на примере; после тура всё возвращается как было -->
-    <button type="button" class="demo-link" @click="startDemo(demoTour(), false)">{{ t('tour.demo') }}</button>
 
     <!-- при выборе дней в календаре главная кнопка становится «Задать часы · N», при открытой шторке прячется -->
     <NokiMainButton v-if="!ctx.sheetOpen.value" :text="mainText" :loading="ctx.saving.value" @click="onMain" />
@@ -207,20 +204,6 @@ async function onMain() {
   gap: var(--space-md);
 
   p { margin: 0; }
-}
-
-.demo-link {
-  align-self: center;
-  padding: var(--space-sm) var(--space-md);
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
 }
 
 .error {

@@ -66,10 +66,9 @@ const en: Messages = {
     step: '{n} of {total}',
     next: 'Next',
     back: 'Back',
-    skip: 'Skip',
+    close: 'Close',
     done: 'Got it',
-    replay: 'How to use the app',
-    demo: 'Show me an example',
+    howItWorks: 'How it works',
     hours: {
       slotMode: {
         title: 'How clients book',
@@ -171,7 +170,7 @@ const en: Messages = {
       },
       help: {
         title: 'If you forget something',
-        text: 'You can watch this again any time — the link is always at the bottom',
+        text: 'You can watch this again. The "How it works" button is on other screens too — there Noki shows everything with an example',
       },
     },
   },

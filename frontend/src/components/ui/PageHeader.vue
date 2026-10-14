@@ -4,6 +4,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
     </button>
     <h1>{{ title }}</h1>
+    <NokiHelpButton v-if="help" @click="help" />
   </header>
 </template>
 
@@ -12,6 +13,7 @@
 import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { tg, isInTelegram } from '@/telegram'
+import NokiHelpButton from '@/components/ui/NokiHelpButton.vue'
 
 /** Пропсы PageHeader */
 interface Props {
@@ -19,6 +21,8 @@ interface Props {
   title: string
   /** Обработчик «назад». Не передан — кнопки нет */
   back?: () => void
+  /** Запустить тур экрана: справа появится «Как это работает». Не передан — кнопки нет */
+  help?: () => void
 }
 
 const props = defineProps<Props>()
@@ -51,7 +55,11 @@ onBeforeUnmount(() => setNative(false))
   gap: var(--space-sm);
   min-height: var(--control-height);
 
-  h1 { margin: 0; }
+  h1 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
 }
 
 .back {

@@ -11,7 +11,7 @@
   </div>
 
   <div v-else class="stack">
-    <PageHeader :title="existing ? t('services.editTitle') : t('services.newTitle')" :back="back" />
+    <PageHeader :title="existing ? t('services.editTitle') : t('services.newTitle')" :back="back" :help="startDemo" />
 
     <NokiInput v-model="form.name" data-tour="name" :label="t('services.name')" :placeholder="t('services.namePlaceholder')" :error="errors.name" />
 
@@ -274,15 +274,22 @@ watch(tour.active, (on) => {
   resetDemo()
 })
 
+/**
+ * Запустить пример. На услуге, которую правят, тоже можно: после тура форма вернётся к её данным.
+ * @param auto сам при первой услуге (один раз) или по кнопке «Как это работает»
+ */
+function startDemo(auto = false) {
+  if (auto) tour.autoStart(SERVICE_DEMO_TOUR, demoActions, demoUndo)
+  else tour.start(SERVICE_DEMO_TOUR, demoActions, demoUndo)
+  demoRunning = tour.active.value
+}
+
 onMounted(() => {
   if (existing || notFound) return
   setTimeout(() => {
-    const asked = route.query.demo === '1'
-    // по ссылке — всегда; сам — один раз, пока у мастера нет ни одной услуги
-    if (!asked && store.services.length) return
-    if (asked) tour.start(SERVICE_DEMO_TOUR, demoActions, demoUndo)
-    else tour.autoStart(SERVICE_DEMO_TOUR, demoActions, demoUndo)
-    demoRunning = tour.active.value
+    // из списка услуг по «Как это работает» — всегда; сам — один раз, пока у мастера нет ни одной услуги
+    if (route.query.demo === '1') startDemo()
+    else if (!store.services.length) startDemo(true)
   }, DEMO_DELAY_MS)
 })
 

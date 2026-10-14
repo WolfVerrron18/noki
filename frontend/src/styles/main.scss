@@ -47,3 +47,16 @@ body {
   &[data-placement^='top'] > .tippy-arrow::before { border-top-color: var(--secondary-600); }
   &[data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: var(--secondary-600); }
 }
+
+// Тур: элемент текущего шага (NokiTour ставит data-tour-active) — мягкая обводка цветом темы, которая «дышит»
+[data-tour-active] {
+  outline: 2px solid var(--primary-400);
+  outline-offset: var(--space-xs);
+  animation: tour-glow 1.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+
+@keyframes tour-glow {
+  50% { outline-color: var(--primary-200); }
+}
