@@ -1,6 +1,6 @@
 <template>
   <div class="stack">
-    <PageHeader :title="t('hours.title')" :back="() => router.back()" :help="() => startDemo(demoTour(), false)" />
+    <PageHeader :title="t('hours.title')" :back="back" :help="() => startDemo(demoTour(), false)" />
 
     <div class="intro">
       <NokiMascot :mood="ctx.hasError.value ? 'sad' : 'happy'" :size="96" />
@@ -11,8 +11,15 @@
 
     <p v-if="ctx.errors.save" class="error">{{ ctx.errors.save }}</p>
 
-    <!-- при выборе дней в календаре главная кнопка становится «Задать часы · N», при открытой шторке прячется -->
-    <NokiMainButton v-if="!ctx.sheetOpen.value" :text="mainText" :loading="ctx.saving.value" @click="onMain" />
+    <!-- при выборе дней в календаре главная кнопка становится «Задать часы · N», при открытой шторке прячется;
+         «Сохранить» неактивна, пока ничего не меняли -->
+    <NokiMainButton
+      v-if="!ctx.sheetOpen.value"
+      :text="mainText"
+      :disabled="!ctx.pickingDays.value && !ctx.dirty.value"
+      :loading="ctx.saving.value"
+      @click="onMain"
+    />
   </div>
 </template>
 
@@ -188,6 +195,10 @@ watch(tour.active, (on) => {
 })
 
 onMounted(() => setTimeout(() => startDemo(demoTour(), true), DEMO_DELAY_MS))
+
+async function back() {
+  if (await ctx.confirmLeave()) router.back()
+}
 
 async function onMain() {
   if (ctx.pickingDays.value) return hoursFields.value?.openSheet()

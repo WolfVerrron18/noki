@@ -3,20 +3,15 @@
     <NokiSelect v-model="form.timezone" :label="t('onboarding.time.timezone')" :options="tzOptions" />
 
     <!-- блоки «вариант + пояснение» обёрнуты, чтобы тур подсвечивал их целиком (data-tour) -->
-    <div class="stack" data-tour="slot-mode">
-      <NokiSegmented v-model="form.slot_mode" :label="t('scheduleEditor.slotMode')" :options="slotModeOptions" />
-      <p class="hint">{{ fixed ? t('scheduleEditor.slotFixedHint') : t('scheduleEditor.slotGridHint') }}</p>
-    </div>
+    <!-- развилки режима — карточками: пояснение видно у обоих вариантов, второй не теряется -->
+    <NokiChoiceCards v-model="form.slot_mode" data-tour="slot-mode" :label="t('scheduleEditor.slotMode')" :options="slotModeOptions" />
     <!-- шаг сетки нужен только когда клиентка выбирает время внутри часов -->
     <div v-if="!fixed" class="stack" data-tour="step">
       <NokiSegmented v-model="form.slot_step_min" :label="t('onboarding.time.step')" :options="stepOptions" />
       <p class="hint">{{ t('onboarding.time.stepHint') }}</p>
     </div>
 
-    <div class="stack" data-tour="schedule-mode">
-      <NokiSegmented v-model="form.schedule_mode" :label="t('scheduleEditor.mode')" :options="modeOptions" />
-      <p class="hint">{{ form.schedule_mode === EnumScheduleMode.Weekly ? t('scheduleEditor.weeklyHint') : t('scheduleEditor.datesHint') }}</p>
-    </div>
+    <NokiChoiceCards v-model="form.schedule_mode" data-tour="schedule-mode" :label="t('scheduleEditor.mode')" :options="modeOptions" />
     <WorkHoursEditor
       v-if="form.schedule_mode === EnumScheduleMode.Weekly"
       v-model="form.work_hours"
@@ -47,6 +42,7 @@ import { useI18n } from 'vue-i18n'
 import { EnumScheduleMode, EnumSlotMode } from '@/api/types'
 import NokiSelect from '@/components/ui/NokiSelect.vue'
 import NokiSegmented from '@/components/ui/NokiSegmented.vue'
+import NokiChoiceCards from '@/components/ui/NokiChoiceCards.vue'
 import WorkHoursEditor from '@/components/master/WorkHoursEditor.vue'
 import MonthScheduleEditor from '@/components/master/MonthScheduleEditor.vue'
 import { timezoneOptions } from '@/utils/time'
@@ -67,16 +63,16 @@ const monthEditor = ref<InstanceType<typeof MonthScheduleEditor> | null>(null)
 const fixed = computed(() => form.slot_mode === EnumSlotMode.Fixed)
 const tzOptions = computed(() => timezoneOptions(locale.value))
 const slotModeOptions = computed(() => [
-  { value: EnumSlotMode.Grid, label: t('scheduleEditor.slotGrid') },
-  { value: EnumSlotMode.Fixed, label: t('scheduleEditor.slotFixed') },
+  { value: EnumSlotMode.Grid, label: t('scheduleEditor.slotGrid'), hint: t('scheduleEditor.slotGridHint') },
+  { value: EnumSlotMode.Fixed, label: t('scheduleEditor.slotFixed'), hint: t('scheduleEditor.slotFixedHint') },
 ])
 const stepOptions = computed(() => [
   { value: 15 as const, label: t('onboarding.time.step15') },
   { value: 30 as const, label: t('onboarding.time.step30') },
 ])
 const modeOptions = computed(() => [
-  { value: EnumScheduleMode.Weekly, label: t('scheduleEditor.weekly') },
-  { value: EnumScheduleMode.Dates, label: t('scheduleEditor.dates') },
+  { value: EnumScheduleMode.Weekly, label: t('scheduleEditor.weekly'), hint: t('scheduleEditor.weeklyHint') },
+  { value: EnumScheduleMode.Dates, label: t('scheduleEditor.dates'), hint: t('scheduleEditor.datesHint') },
 ])
 
 /** Открыть шторку часов для выбранных в календаре дней */

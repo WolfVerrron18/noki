@@ -7,6 +7,7 @@ import { DEFAULT_LOOK } from '@/components/mascot/look'
 import { useAuth } from '@/stores/auth'
 import { useMaster } from '@/stores/master'
 import { useShareLink } from '@/composables/useShareLink'
+import { useDirty } from '@/composables/useDirty'
 import { slugify, sanitizeSlug, SLUG_RE } from '@/utils/slug'
 import { deviceTimezone } from '@/utils/time'
 import { fromRanges, validateDayHours } from '@/utils/hours'
@@ -60,6 +61,8 @@ export function useMasterForm() {
     slot_overrides: existing?.slot_overrides ?? {},
     slot_templates: existing?.slot_templates ?? [],
   })
+  /** Изменена ли форма после открытия или сохранения */
+  const { dirty, markSaved, confirmLeave } = useDirty(() => form)
   const errors = reactive<MasterFormErrors>({})
   /** Дни недели с ошибкой в часах — редактор подсвечивает их */
   const invalidDays = ref<Weekday[]>([])
@@ -176,6 +179,7 @@ export function useMasterForm() {
         day_overrides: form.schedule_mode === EnumScheduleMode.Weekly ? {} : form.day_overrides,
         slot_overrides: form.schedule_mode === EnumScheduleMode.Weekly ? {} : form.slot_overrides,
       })
+      markSaved()
       return true
     } catch {
       errors.save = t('common.error')
@@ -193,6 +197,8 @@ export function useMasterForm() {
     sheetOpen,
     pickingDays,
     saving,
+    dirty,
+    confirmLeave,
     slugHint,
     hasError,
     onSlugInput,

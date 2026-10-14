@@ -68,13 +68,13 @@ export async function robotType(set: (value: string) => void, text: string, sign
 }
 
 /**
- * Кнопка с такой подписью внутри элемента тура.
+ * Кнопка с такой подписью внутри элемента тура. У карточек с пояснением (NokiChoiceCards) подпись — в data-label.
  * @param target значение data-tour
  * @param label подпись кнопки
  */
 export function buttonIn(target: string, label: string): HTMLElement | null {
   const root = document.querySelector(`[data-tour="${target}"]`)
-  return [...(root?.querySelectorAll<HTMLElement>('button') ?? [])].find((b) => b.textContent?.trim() === label) ?? null
+  return [...(root?.querySelectorAll<HTMLElement>('button') ?? [])].find((b) => (b.dataset.label ?? b.textContent?.trim()) === label) ?? null
 }
 
 /**

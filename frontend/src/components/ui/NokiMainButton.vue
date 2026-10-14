@@ -1,5 +1,8 @@
 <template>
-  <NokiButton v-if="!native" :disabled="disabled" :loading="loading" @click="emit('click')">{{ text }}</NokiButton>
+  <div v-if="!native" class="main-button">
+    <!-- в браузере кнопка закреплена снизу, как MainButton в Telegram: видна, куда бы ни прокрутили -->
+    <NokiButton :disabled="disabled" :loading="loading" @click="emit('click')">{{ text }}</NokiButton>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -69,3 +72,27 @@ if (native) {
   })
 }
 </script>
+
+<style scoped lang="scss">
+.main-button {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  // сверху без отступа: в покое расстояние до блока выше — обычный gap, как между остальными
+  margin: 0 calc(var(--space-md) * -1);
+  padding: 0 var(--space-md) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  background: var(--bg);
+
+  // растворение над кнопкой: прокручиваемое мягко уходит под неё. В покое лежит на пустом gap и не видно
+  &::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    height: var(--space-md);
+    background: linear-gradient(to top, var(--bg), transparent);
+    pointer-events: none;
+  }
+}
+</style>

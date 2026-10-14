@@ -63,7 +63,8 @@
     <NokiButton v-if="existing" variant="outline" :disabled="saving" @click="remove">{{ t('services.delete') }}</NokiButton>
 
     <p v-if="errors.save" class="error">{{ errors.save }}</p>
-    <NokiMainButton :text="t('common.save')" :loading="saving" @click="save" />
+    <!-- у своей услуги «Сохранить» неактивна, пока ничего не меняли; новую можно жать сразу — покажет, что заполнить -->
+    <NokiMainButton :text="t('common.save')" :disabled="!!existing && !dirty" :loading="saving" @click="save" />
   </div>
 </template>
 
@@ -86,6 +87,7 @@ import { EnumServiceCategory, SERVICE_CATEGORIES } from '@/components/services/c
 import { SERVICE_PRESETS } from '@/components/services/presets'
 import { useMaster } from '@/stores/master'
 import { CURRENCY, useFormat } from '@/composables/useFormat'
+import { useDirty } from '@/composables/useDirty'
 import { confirmDialog, haptic } from '@/telegram'
 import { useTour, type TourActions, type TourUndo } from '@/composables/useTour'
 import { SERVICE_DEMO_TOUR } from '@/components/tour/tours'
@@ -152,6 +154,7 @@ watch(presetOptions, (v) => v.length && (shownPresets.value = v))
 
 /** Длительность из формы, минуты */
 const currentDuration = () => (durationPick.value === CUSTOM ? Number(customDuration.value) : durationPick.value)
+const { dirty, confirmLeave } = useDirty(() => ({ ...form, duration_min: currentDuration() }))
 
 /**
  * Подсказка вида, с которой совпадают название и длительность.
@@ -293,8 +296,13 @@ onMounted(() => {
   }, DEMO_DELAY_MS)
 })
 
-function back() {
+/** К списку услуг (после сохранения или удаления — без вопросов) */
+function leave() {
   router.push({ name: 'master-services' })
+}
+
+async function back() {
+  if (await confirmLeave()) leave()
 }
 
 async function remove() {
@@ -304,7 +312,7 @@ async function remove() {
   try {
     await store.deleteService(existing.id)
     haptic.success()
-    back()
+    leave()
   } catch {
     errors.save = t('common.error')
     haptic.error()
@@ -333,7 +341,7 @@ async function save() {
         category: form.category,
       }, props.id)
     haptic.success()
-    back()
+    leave()
   } catch {
     errors.save = t('common.error')
     haptic.error()

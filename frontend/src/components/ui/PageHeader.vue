@@ -9,7 +9,8 @@
 </template>
 
 <script setup lang="ts">
-// Шапка экрана. В Telegram «назад» — системная BackButton, в браузере — своя кнопка
+// Шапка экрана: закреплена сверху — всегда видно, где ты и как вернуться.
+// В Telegram «назад» — системная BackButton, в браузере — своя кнопка
 import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { tg, isInTelegram } from '@/telegram'
@@ -50,10 +51,18 @@ onBeforeUnmount(() => setNative(false))
 
 <style scoped lang="scss">
 .header {
+  // на всю ширину поверх полей #app: прокручиваемое уходит под шапку, а не просвечивает по бокам
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   min-height: var(--control-height);
+  // вверх — только на свой padding: заголовок стоит, где стоял, и не наезжает на то, что над экраном (плашка режима просмотра)
+  margin: calc(var(--space-sm) * -1) calc(var(--space-md) * -1) 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg);
 
   h1 {
     flex: 1;

@@ -2,7 +2,7 @@
   <div class="stack">
     <PageHeader :title="t('mascot.editor.title')" :back="back" />
 
-    <div class="preview">
+    <div ref="previewEl" class="preview">
       <div class="burst">
         <NokiMascot ref="noki" :look="draft" :mood="justSaved ? 'wink' : 'happy'" :size="180" />
         <NokiConfetti :autoplay="false" :trigger="savedCount" />
@@ -52,7 +52,8 @@
     </div>
 
     <NokiButton variant="soft" @click="shuffle">{{ t('mascot.editor.random') }}</NokiButton>
-    <NokiMainButton :text="t('common.save')" :loading="saving" @click="save" />
+    <!-- неактивна, пока ничего не меняли: сразу видно, что выбор ещё не сохранён -->
+    <NokiMainButton :text="t('common.save')" :disabled="!dirty" :loading="saving" @click="save" />
     <p v-if="error" class="error">{{ error }}</p>
   </div>
 </template>
@@ -76,6 +77,8 @@ import { EnumNokiReaction } from '@/components/mascot/rive/character'
 import type { SelectOption } from '@/components/ui/types'
 import { DEFAULT_PALETTE, PALETTES, type EnumPalette } from '@/styles/palettes'
 import { useMaster } from '@/stores/master'
+import { useDirty } from '@/composables/useDirty'
+import { prefersReducedMotion } from '@/animations/gsap'
 import { haptic } from '@/telegram'
 
 const { t } = useI18n()
@@ -90,6 +93,8 @@ const error = ref('')
 /** Счётчик сохранений: каждое запускает конфетти */
 const savedCount = ref(0)
 const noki = ref<NokiMascotExpose | null>(null)
+const previewEl = ref<HTMLElement | null>(null)
+const { dirty, markSaved, confirmLeave } = useDirty(() => ({ mascot: draft.value, theme: theme.value }))
 
 const optionsEl = ref<HTMLElement | null>(null)
 useStaggerIn(optionsEl)
@@ -131,7 +136,10 @@ async function save() {
   try {
     await store.saveAppearance({ mascot: draft.value, theme: theme.value })
     haptic.success()
+    markSaved()
     justSaved.value = true
+    // кнопка внизу, Ноки наверху: возвращаемся к ней — видно, как она радуется
+    previewEl.value?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' })
     savedCount.value++
   } catch {
     error.value = t('common.error')
@@ -141,8 +149,8 @@ async function save() {
   }
 }
 
-function back() {
-  router.push({ name: 'master-home' })
+async function back() {
+  if (await confirmLeave()) router.push({ name: 'master-home' })
 }
 </script>
 
