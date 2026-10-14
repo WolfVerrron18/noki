@@ -37,12 +37,13 @@ import NokiButton from '@/components/ui/NokiButton.vue'
 import { useAuth } from '@/stores/auth'
 import { useMaster } from '@/stores/master'
 import { getStartParam, isInTelegram } from '@/telegram'
+import { PREVIEW_MODE } from '@/demo'
 
 const { t } = useI18n()
 const auth = useAuth()
 const router = useRouter()
 const store = useMaster()
-// В браузере при разработке показываем выбор роли вместо автоперехода
+// В режиме просмотра (браузер, dev или демо) показываем выбор роли вместо автоперехода
 const preview = ref(false)
 /** Кабинета нет и ссылки мастера нет — показываем выбор «мастер / мои записи» */
 const newcomer = ref(false)
@@ -54,7 +55,7 @@ async function start() {
   if (!auth.me) return
   const slug = getStartParam()
   if (slug) return router.replace({ name: 'client-master', params: { slug } })
-  if (import.meta.env.DEV && !isInTelegram()) {
+  if (PREVIEW_MODE && !isInTelegram()) {
     preview.value = true
     return
   }

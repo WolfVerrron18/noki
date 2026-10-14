@@ -67,7 +67,8 @@ export interface RiveCharacterSource {
 
 /** Ноки: файл лежит в public/rive */
 export const NOKI_RIVE: RiveCharacterSource = {
-  src: '/rive/noki_rebuilt.riv',
+  // от базового пути сборки: на GitHub Pages сайт живёт не в корне домена
+  src: `${import.meta.env.BASE_URL}rive/noki_rebuilt.riv`,
   artboard: 'Noki',
   stateMachine: 'Noki',
 }

@@ -18,6 +18,7 @@ import { computed, provide, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { isInTelegram } from '@/telegram'
+import { PREVIEW_MODE } from '@/demo'
 import { NOKI_LOOK_KEY } from '@/components/mascot/look'
 import NokiTour from '@/components/ui/NokiTour.vue'
 import { useBooking } from '@/stores/booking'
@@ -31,7 +32,7 @@ const router = useRouter()
 const { t } = useI18n()
 
 /** Полоска «сменить роль»: только npm run dev в браузере и не на самом экране выбора */
-const previewBar = computed(() => import.meta.env.DEV && !isInTelegram() && route.name !== 'start' && !route.meta.public)
+const previewBar = computed(() => PREVIEW_MODE && !isInTelegram() && route.name !== 'start' && !route.meta.public)
 provide(NOKI_LOOK_KEY, computed(() => store.master?.mascot))
 
 /** Страница записи к мастеру (/b/:slug/*): там тема мастера из ссылки */

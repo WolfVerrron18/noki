@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { pb } from '@/api/pb'
 import { enableMockRepo } from '@/api/repo'
 import { tg, isInTelegram } from '@/telegram'
+import { DEMO_BUILD, PREVIEW_MODE } from '@/demo'
 
 /** Текущий пользователь после входа */
 export interface Me {
@@ -25,14 +26,15 @@ export const useAuth = defineStore('auth', () => {
     error.value = null
     let initData = tg?.initData ?? ''
     if (!isInTelegram()) {
-      if (!import.meta.env.DEV) {
+      if (!PREVIEW_MODE) {
         error.value = 'auth.openInTelegram'
         return
       }
-      // Режим разработки в браузере: пробуем dev-вход на сервере (NIDOKI_DEV_AUTH=1),
-      // а если бэкенд не запущен — работаем с тестовым пользователем и данными в браузере
+      // Режим просмотра в браузере: пробуем dev-вход на сервере (NIDOKI_DEV_AUTH=1),
+      // а если бэкенд не запущен (или это демо-сборка без бэкенда) — тестовый пользователь и данные в браузере
       initData = 'dev'
       try {
+        if (DEMO_BUILD) throw new Error('demo')
         await pb.send('/api/health', {})
       } catch {
         enableMockRepo()

@@ -1,0 +1,68 @@
+# Демо для просмотра с телефона: фронтенд в режиме просмотра (без Telegram и бэкенда, данные в браузере)
+# собирается и выкладывается на GitHub Pages при каждом пуше в main.
+# Один раз в настройках репозитория: Settings → Pages → Build and deployment → Source: GitHub Actions.
+name: Демо на GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# новая выкладка отменяет недоделанную старую
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Тесты
+        run: npm test
+
+      - name: Сборка демо
+        run: npm run build
+        env:
+          # режим просмотра без бэкенда (src/demo.ts)
+          VITE_DEMO: '1'
+          # сайт живёт в https://<владелец>.github.io/<репозиторий>/
+          BASE_PATH: /${{ github.event.repository.name }}/
+
+      # Pages не знает про адреса приложения (/m/services и т. п.): на неизвестный адрес отдаёт 404.html —
+      # пусть это будет само приложение, роутер откроет нужный экран
+      - name: Обновление страницы на любом адресе
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

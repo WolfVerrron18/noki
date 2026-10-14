@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+  // базовый путь: на GitHub Pages сайт живёт в /<репозиторий>/ (BASE_PATH задаёт workflow)
+  base: process.env.BASE_PATH || '/',
   plugins: [vue()],
   resolve: {
     alias: {
