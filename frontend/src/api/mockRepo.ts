@@ -277,6 +277,9 @@ export const mockRepo: Repo = {
     save()
   },
 
+  // в режиме просмотра бота нет — ответ некуда сохранять
+  async setBotAccess() {},
+
   async acceptedDocuments() {
     return db.consents.map((c) => ({ ...c }))
   },

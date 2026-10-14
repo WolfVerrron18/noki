@@ -1,7 +1,7 @@
 // Профиль мастера: свой (создать, изменить) и публичный — по адресу ссылки.
 import { Hono } from 'hono'
 import { and, eq, ne, sql } from 'drizzle-orm'
-import type { AppDeps, AppEnv } from '~/app'
+import type { AppContext, AppEnv } from '~/app'
 import { requireUser } from '~/auth/session'
 import { masters } from '~/db/schema'
 import { conflict, notFound, pgCode, PG_UNIQUE_VIOLATION } from '~/lib/errors'
@@ -23,7 +23,7 @@ function uniqueToConflict(e: unknown): never {
  * Маршруты профиля мастера.
  * @param deps зависимости приложения
  */
-export function masterRoutes({ db }: AppDeps) {
+export function masterRoutes({ db }: AppContext) {
   const r = new Hono<AppEnv>()
 
   // свой профиль; нет — null (ещё не мастер, пойдёт в онбординг)

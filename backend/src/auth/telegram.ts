@@ -14,6 +14,8 @@ export interface TelegramUser {
   last_name?: string
   /** Язык интерфейса Telegram, например "ru" */
   language_code?: string
+  /** Разрешил ли боту писать ему (мини-апп по прямой ссылке) */
+  allows_write_to_pm?: boolean
 }
 
 /** Проверенные данные входа */

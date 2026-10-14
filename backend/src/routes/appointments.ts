@@ -5,7 +5,7 @@ import { and, asc, eq, gt, gte, lt, sql } from 'drizzle-orm'
 import { EnumAppointmentSource, isCancellable, isCompletable } from '@/api/types'
 import { normalizePhone, phoneCountry } from '@/utils/phone'
 import { todayIn } from '@/utils/slots'
-import type { AppDeps, AppEnv, AuthUser } from '~/app'
+import type { AppContext, AppEnv, AuthUser } from '~/app'
 import { requireUser } from '~/auth/session'
 import { appointments, masters } from '~/db/schema'
 import { badRequest, conflict, forbidden, notFound, pgCode, PG_EXCLUSION_VIOLATION } from '~/lib/errors'
@@ -19,7 +19,7 @@ import { findMaster, findService, idParam, ownMaster, requireDocs } from '~/rout
  * Маршруты записей.
  * @param deps зависимости приложения
  */
-export function appointmentRoutes({ db, now }: AppDeps) {
+export function appointmentRoutes({ db, now, notify }: AppContext) {
   const r = new Hono<AppEnv>()
 
   /**
@@ -53,8 +53,9 @@ export function appointmentRoutes({ db, now }: AppDeps) {
     if (!slots.some((s) => Date.parse(s) === start.getTime())) throw conflict('slot_taken')
 
     const end = new Date(start.getTime() + service.durationMin * 60000)
+    let row
     try {
-      const [row] = await db
+      ;[row] = await db
         .insert(appointments)
         .values({
           masterId: master.id,
@@ -70,14 +71,18 @@ export function appointmentRoutes({ db, now }: AppDeps) {
           startAt: start,
           endAt: end,
           source,
+          // по часам приложения: от момента записи считаются напоминания
+          createdAt: now(),
         })
         .returning()
-      return toAppointment(row, master)
     } catch (e) {
       // два запроса на одно время одновременно: второе отбивает сама база
       if (pgCode(e) === PG_EXCLUSION_VIOLATION) throw conflict('slot_taken')
       throw e
     }
+    // клиентка записалась сама — мастеру новая запись, ей подтверждение. Ручная запись уведомлений не шлёт
+    if (!manual) await notify.booked(row, master)
+    return toAppointment(row, master)
   }
 
   /**
@@ -149,6 +154,8 @@ export function appointmentRoutes({ db, now }: AppDeps) {
       .where(and(eq(appointments.id, a.id), eq(appointments.status, 'booked')))
       .returning()
     if (!row) throw conflict('not_cancellable')
+    // отменила клиентка — пишем мастеру, отменила мастер — клиентке
+    await notify.cancelled(row, m)
     return c.json(toAppointment(row, m))
   })
 

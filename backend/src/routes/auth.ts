@@ -1,7 +1,7 @@
 // Вход: фронт присылает initData из Telegram, сервер проверяет подпись и выдаёт токен.
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import type { AppDeps, AppEnv } from '~/app'
+import type { AppContext, AppEnv } from '~/app'
 import { validateInitData, type TelegramUser } from '~/auth/telegram'
 import { issueToken } from '~/auth/session'
 import { masters, users } from '~/db/schema'
@@ -15,7 +15,7 @@ export const DEV_USER: TelegramUser = { id: 1000001, first_name: 'Preview', lang
  * Маршруты входа.
  * @param deps зависимости приложения
  */
-export function authRoutes({ db, config, now }: AppDeps) {
+export function authRoutes({ db, config, now }: AppContext) {
   const r = new Hono<AppEnv>()
 
   // POST /api/auth/telegram { initData } → { token, user, master }
@@ -34,11 +34,13 @@ export function authRoutes({ db, config, now }: AppDeps) {
 
     const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ').slice(0, 100)
     const languageCode = (tgUser.language_code ?? '').slice(0, 10)
-    // имя и язык обновляем при каждом входе: человек мог сменить их в Telegram
+    // имя и язык обновляем при каждом входе: человек мог сменить их в Telegram.
+    // Разрешение писать только добавляем: его могли дать через /start, а initData об этом не знает
+    const allows = tgUser.allows_write_to_pm === true
     const [user] = await db
       .insert(users)
-      .values({ telegramId: tgUser.id, name, languageCode })
-      .onConflictDoUpdate({ target: users.telegramId, set: { name, languageCode } })
+      .values({ telegramId: tgUser.id, name, languageCode, writeAccess: allows })
+      .onConflictDoUpdate({ target: users.telegramId, set: { name, languageCode, ...(allows ? { writeAccess: true } : {}) } })
       .returning()
     const [master] = await db.select({ id: masters.id }).from(masters).where(eq(masters.userId, user.id))
 
@@ -46,6 +48,8 @@ export function authRoutes({ db, config, now }: AppDeps) {
       token: await issueToken({ id: user.id, telegramId: user.telegramId }, config.jwtSecret, now()),
       user: { id: user.id, telegram_id: user.telegramId, name: user.name },
       master: master?.id ?? null,
+      // может ли бот писать: нет — мини-апп попросит разрешение (requestWriteAccess)
+      write_access: user.writeAccess,
     })
   })
 

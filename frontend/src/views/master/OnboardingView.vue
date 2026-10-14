@@ -45,6 +45,7 @@ import { EnumLegalDoc, EnumSlotMode } from '@/api/types'
 import LegalConsent from '@/components/legal/LegalConsent.vue'
 import { MASTER_DOCS } from '@/legal/documents'
 import { useLegal } from '@/stores/legal'
+import { useAuth } from '@/stores/auth'
 
 const TOTAL = 2
 const { t } = useI18n()
@@ -53,6 +54,7 @@ const ctx = useMasterForm()
 
 const step = ref(1)
 const legal = useLegal()
+const auth = useAuth()
 /** Галочка согласия мастера; уже давала (вернулась на шаг 1) — отмечена */
 const consent = ref(!legal.missing(MASTER_DOCS).length)
 const consentError = ref('')
@@ -86,6 +88,8 @@ async function onMain() {
   if (!(await ctx.save())) return haptic.error()
   haptic.success()
   router.replace({ name: 'master-home' })
+  // о новых записях и отменах сообщает бот — если мастер разрешит ему писать
+  void auth.askBotAccess()
 }
 
 function back() {

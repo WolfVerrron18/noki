@@ -1,5 +1,6 @@
 import { useI18n } from 'vue-i18n'
 import { tg, isInTelegram, haptic } from '@/telegram'
+import { appLink } from '@/utils/appLink'
 
 const BOT = import.meta.env.VITE_BOT_USERNAME || 'nidoki_bot'
 const APP = import.meta.env.VITE_APP_SHORT_NAME || 'app'
@@ -8,7 +9,7 @@ const APP = import.meta.env.VITE_APP_SHORT_NAME || 'app'
 export function useShareLink() {
   const { t } = useI18n()
 
-  const bookingLink = (slug: string) => `https://t.me/${BOT}/${APP}?startapp=${encodeURIComponent(slug)}`
+  const bookingLink = (slug: string) => appLink(BOT, APP, slug)
 
   async function copy(slug: string): Promise<boolean> {
     try {

@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { setToken } from '@/api/http'
-import { enableMockRepo } from '@/api/repo'
+import { enableMockRepo, repo } from '@/api/repo'
 import { authApi } from '@/api/services/auth'
 import type { Me } from '@/api/types'
-import { tg, isInTelegram } from '@/telegram'
+import { tg, isInTelegram, requestWriteAccess } from '@/telegram'
 import { DEMO_BUILD, PREVIEW_MODE } from '@/demo'
 
 export const useAuth = defineStore('auth', () => {
@@ -38,10 +38,26 @@ export const useAuth = defineStore('auth', () => {
       const res = await authApi.login(initData)
       setToken(res.token)
       me.value = { id: res.user.id, telegram_id: res.user.telegram_id, name: res.user.name }
+      botAccess.value = res.write_access
     } catch {
       error.value = 'auth.failed'
     }
   }
 
-  return { me, error, login }
+  /** Может ли бот писать: уведомления о записях и напоминания приходят только с разрешением */
+  const botAccess = ref(false)
+
+  /**
+   * Попросить разрешение боту писать, если его ещё нет. Telegram показывает свой диалог; вне Telegram — ничего.
+   * Ответ сохраняется на сервере. Ошибки не мешают экрану: это необязательный шаг.
+   */
+  async function askBotAccess() {
+    if (botAccess.value) return
+    const allowed = await requestWriteAccess()
+    if (allowed === null) return
+    botAccess.value = allowed
+    await repo().setBotAccess(allowed).catch(() => {})
+  }
+
+  return { me, error, login, botAccess, askBotAccess }
 })

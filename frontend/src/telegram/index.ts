@@ -111,6 +111,8 @@ interface WebApp {
   disableVerticalSwipes?(): void
   /** Снова разрешить закрытие свайпом вниз */
   enableVerticalSwipes?(): void
+  /** Попросить разрешение боту писать пользователю (Bot API 6.9+) */
+  requestWriteAccess?(cb: (allowed: boolean) => void): void
   /** Попросить пользователя поделиться номером (Bot API 6.9+) */
   requestContact?(cb: (shared: boolean, response?: TgContactResponse) => void): void
   /** Поддерживает ли клиент Telegram версию Bot API */
@@ -224,6 +226,16 @@ export function confirmDialog(message: string): Promise<boolean> {
     return new Promise((resolve) => tg!.showConfirm!(message, resolve))
   }
   return Promise.resolve(window.confirm(message))
+}
+
+/**
+ * Попросить разрешение боту писать: без него не придут уведомления о записях и напоминания.
+ * Telegram показывает свой диалог; если разрешение уже есть, сразу отвечает «да».
+ * @returns ответ пользователя; null — вне Telegram или клиент слишком старый
+ */
+export function requestWriteAccess(): Promise<boolean | null> {
+  if (!isInTelegram() || !tg!.requestWriteAccess || !tg!.isVersionAtLeast?.('6.9')) return Promise.resolve(null)
+  return new Promise((resolve) => tg!.requestWriteAccess!(resolve))
 }
 
 /** Можно ли попросить номер у Telegram (кнопка «Взять из Telegram») */

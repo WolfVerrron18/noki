@@ -144,6 +144,12 @@ export interface Repo {
    * @throws ошибка со status 409, если редакция устарела
    */
   acceptDocuments(docs: AcceptedDoc[]): Promise<AcceptedDoc[]>
+
+  /**
+   * Запомнить ответ на «Разрешить боту писать?»: без разрешения бот не шлёт уведомления и напоминания.
+   * @param allowed разрешил ли
+   */
+  setBotAccess(allowed: boolean): Promise<void>
 }
 
 let current: Repo = apiRepo

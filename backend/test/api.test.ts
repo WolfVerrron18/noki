@@ -259,6 +259,6 @@ describe('API', () => {
     const res = await env.call('POST', '/api/feedback', { token: client, body: { text: 'Хочу тёмную тему', role: 'client' } })
     expect(res.status).toBe(204)
     expect(env.sent.at(-1)).toMatchObject({ chatId: '42' })
-    expect(env.sent.at(-1)!.text).toContain('Хочу тёмную тему')
+    expect(env.sent.at(-1)!.message.lines).toContain('Хочу тёмную тему')
   })
 })

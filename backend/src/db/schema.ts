@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   telegramId: bigint('telegram_id', { mode: 'number' }).notNull().unique(),
   name: text('name').notNull().default(''),
   languageCode: text('language_code').notNull().default(''),
+  writeAccess: boolean('write_access').notNull().default(false),
   createdAt: moment('created_at').notNull().defaultNow(),
 })
 

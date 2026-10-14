@@ -3,25 +3,27 @@ import { createApp } from '~/app'
 import type { Config } from '~/config'
 import { migrate, openDatabase, type Database } from '~/db/client'
 import { signInitData } from '~/auth/telegram'
+import type { Bot, BotMessage } from '~/bot/api'
 import type { EnumLegalDoc } from '@/api/types'
 import { currentVersions } from '@/legal/documents'
 
 export const BOT_TOKEN = 'test-bot-token'
+export const WEBHOOK_SECRET = 'test-webhook-secret-123'
 
 /** Тестовое окружение */
 export interface TestEnv {
   /** Открытая база */
   database: Database
   /** Запрос к API: тело — объектом, ответ — статус и JSON */
-  call: (method: string, path: string, opts?: { token?: string; body?: unknown }) => Promise<{ status: number; body: any }>
+  call: (method: string, path: string, opts?: { token?: string; body?: unknown; headers?: Record<string, string> }) => Promise<{ status: number; body: any }>
   /** Войти пользователем Telegram, вернуть токен */
-  login: (telegramId: number, firstName?: string) => Promise<string>
+  login: (telegramId: number, firstName?: string, extra?: { language_code?: string; allows_write_to_pm?: boolean }) => Promise<string>
   /** Принять документы в текущей редакции */
   accept: (token: string, docs: EnumLegalDoc[]) => Promise<void>
   /** Перевести часы */
   setNow: (iso: string) => void
   /** Отправленные ботом сообщения */
-  sent: { chatId: string | number; text: string }[]
+  sent: { chatId: string | number; message: BotMessage }[]
 }
 
 /**
@@ -39,13 +41,19 @@ export async function testEnv(nowIso: string): Promise<TestEnv> {
     dataDir: '',
     jwtSecret: 'test-secret',
     botToken: BOT_TOKEN,
+    botUsername: 'nidoki_bot',
+    appShortName: 'app',
+    botMode: 'webhook',
+    publicUrl: 'https://nidoki.test',
+    webhookSecret: WEBHOOK_SECRET,
     feedbackChatId: '42',
     devAuth: true,
   }
-  const app = createApp({ db: database.db, config, now: () => now, notify: async (chatId, text) => void sent.push({ chatId, text }) })
+  const bot: Bot = { send: async (chatId, message) => (sent.push({ chatId, message }), true) }
+  const app = createApp({ db: database.db, config, now: () => now, bot })
 
-  const call: TestEnv['call'] = async (method, path, { token, body } = {}) => {
-    const headers: Record<string, string> = {}
+  const call: TestEnv['call'] = async (method, path, { token, body, headers: extraHeaders } = {}) => {
+    const headers: Record<string, string> = { ...extraHeaders }
     if (token) headers.Authorization = `Bearer ${token}`
     if (body !== undefined) headers['Content-Type'] = 'application/json'
     const res = await app.request(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) })
@@ -53,8 +61,8 @@ export async function testEnv(nowIso: string): Promise<TestEnv> {
     return { status: res.status, body: text ? JSON.parse(text) : null }
   }
 
-  const login: TestEnv['login'] = async (telegramId, firstName = 'User') => {
-    const initData = signInitData({ auth_date: String(Math.floor(now.getTime() / 1000)), user: { id: telegramId, first_name: firstName } }, BOT_TOKEN)
+  const login: TestEnv['login'] = async (telegramId, firstName = 'User', extra = {}) => {
+    const initData = signInitData({ auth_date: String(Math.floor(now.getTime() / 1000)), user: { id: telegramId, first_name: firstName, ...extra } }, BOT_TOKEN)
     const res = await call('POST', '/api/auth/telegram', { body: { initData } })
     if (res.status !== 200) throw new Error(`login failed: ${res.status}`)
     return res.body.token

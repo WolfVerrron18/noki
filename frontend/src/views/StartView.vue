@@ -37,6 +37,7 @@ import NokiButton from '@/components/ui/NokiButton.vue'
 import { useAuth } from '@/stores/auth'
 import { useMaster } from '@/stores/master'
 import { getStartParam, isInTelegram } from '@/telegram'
+import { EnumStartParam } from '@/utils/appLink'
 import { PREVIEW_MODE } from '@/demo'
 
 const { t } = useI18n()
@@ -53,8 +54,11 @@ async function start() {
   auth.error = null
   await auth.login()
   if (!auth.me) return
-  const slug = getStartParam()
-  if (slug) return router.replace({ name: 'client-master', params: { slug } })
+  const param = getStartParam()
+  // служебные параметры — из кнопок бота: «Мои записи» клиентки, расписание мастера
+  if (param === EnumStartParam.My) return router.replace({ name: 'client-my' })
+  if (param === EnumStartParam.Schedule) return router.replace({ name: 'master-schedule' })
+  if (param) return router.replace({ name: 'client-master', params: { slug: param } })
   if (PREVIEW_MODE && !isInTelegram()) {
     preview.value = true
     return

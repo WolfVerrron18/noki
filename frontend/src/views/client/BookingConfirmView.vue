@@ -133,6 +133,8 @@ async function submit() {
     })
     haptic.success()
     router.replace({ name: 'client-done', params: { slug: props.slug } })
+    // подтверждение и напоминание пришлёт бот — если клиентка разрешит ему писать
+    void auth.askBotAccess()
   } catch (e) {
     errors.save = (e as { status?: number })?.status === 409 ? t('booking.slotTaken') : t('common.error')
     haptic.error()

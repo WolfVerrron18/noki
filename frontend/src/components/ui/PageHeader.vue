@@ -63,6 +63,9 @@ onBeforeUnmount(() => setNative(false))
   margin: calc(var(--space-sm) * -1) calc(var(--space-md) * -1) 0;
   padding: var(--space-sm) var(--space-md);
   background: var(--bg);
+  // фон продолжается вверх до края экрана: под полупрозрачной адресной строкой iOS не просвечивает интерфейс.
+  // Тень, а не блок: высоту страницы не меняет
+  box-shadow: 0 -50vh 0 50vh var(--bg);
 
   h1 {
     flex: 1;

@@ -10,6 +10,8 @@ export interface LoginResult {
   user: Me
   /** id профиля мастера; null — ещё не мастер */
   master: string | null
+  /** Может ли бот писать пользователю; нет — мини-апп попросит разрешение */
+  write_access: boolean
 }
 
 export const authApi = {

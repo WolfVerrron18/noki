@@ -6,6 +6,7 @@ import { slotsApi } from '@/api/services/slots'
 import { appointmentsApi } from '@/api/services/appointments'
 import { feedbackApi } from '@/api/services/feedback'
 import { legalApi } from '@/api/services/legal'
+import { botApi } from '@/api/services/bot'
 
 export const apiRepo: Repo = {
   ...mastersApi,
@@ -14,4 +15,5 @@ export const apiRepo: Repo = {
   ...appointmentsApi,
   ...feedbackApi,
   ...legalApi,
+  ...botApi,
 }

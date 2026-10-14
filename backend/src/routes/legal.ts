@@ -2,7 +2,7 @@
 // значит, человек видел именно тот текст, что сейчас действует.
 import { Hono } from 'hono'
 import { LEGAL_VERSIONS } from '@/legal/documents'
-import type { AppDeps, AppEnv } from '~/app'
+import type { AppContext, AppEnv } from '~/app'
 import { requireUser } from '~/auth/session'
 import { consents } from '~/db/schema'
 import { conflict } from '~/lib/errors'
@@ -13,7 +13,7 @@ import { acceptedDocs } from '~/routes/access'
  * Маршруты документов.
  * @param deps зависимости приложения
  */
-export function legalRoutes({ db, now }: AppDeps) {
+export function legalRoutes({ db, now }: AppContext) {
   const r = new Hono<AppEnv>()
 
   r.get('/api/legal/consents', async (c) => c.json(await acceptedDocs(db, requireUser(c).id)))

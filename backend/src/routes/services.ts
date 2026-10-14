@@ -1,7 +1,7 @@
 // Услуги мастера: список, создание, правка, мягкое удаление и порядок.
 import { Hono } from 'hono'
 import { and, asc, eq, inArray, max } from 'drizzle-orm'
-import type { AppDeps, AppEnv } from '~/app'
+import type { AppContext, AppEnv } from '~/app'
 import { requireUser } from '~/auth/session'
 import { masters, services } from '~/db/schema'
 import { badRequest, notFound } from '~/lib/errors'
@@ -13,7 +13,7 @@ import { findMaster, idParam, ownMaster } from '~/routes/access'
  * Маршруты услуг.
  * @param deps зависимости приложения
  */
-export function serviceRoutes({ db }: AppDeps) {
+export function serviceRoutes({ db }: AppContext) {
   const r = new Hono<AppEnv>()
 
   /**

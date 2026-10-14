@@ -46,6 +46,9 @@ watchEffect(() => {
 
 <style>
 .preview-bar {
+  /* поверх фона шапки: он продолжается вверх до края экрана */
+  position: relative;
+  z-index: 6;
   display: block;
   margin: 0 auto var(--space-sm);
   padding: var(--space-xs) var(--space-md);
