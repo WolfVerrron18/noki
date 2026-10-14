@@ -1,4 +1,4 @@
-import type { Appointment, BookingInput, EnumFeedbackRole, Master, MasterInput, Service, ServiceInput } from '@/api/types'
+import type { AcceptedDoc, Appointment, BookingInput, EnumFeedbackRole, Master, MasterInput, Service, ServiceInput } from '@/api/types'
 import { apiRepo } from '@/api/apiRepo'
 import { mockRepo } from '@/api/mockRepo'
 
@@ -133,6 +133,17 @@ export interface Repo {
    * @param role кто пишет
    */
   sendFeedback(text: string, role: EnumFeedbackRole): Promise<void>
+
+  /** Документы, которые текущий пользователь уже принял (все редакции) */
+  acceptedDocuments(): Promise<AcceptedDoc[]>
+
+  /**
+   * Принять документы. Принимается только текущая редакция — та, что показали.
+   * @param docs документы и их редакции
+   * @returns все принятые документы после приёма
+   * @throws ошибка со status 409, если редакция устарела
+   */
+  acceptDocuments(docs: AcceptedDoc[]): Promise<AcceptedDoc[]>
 }
 
 let current: Repo = apiRepo

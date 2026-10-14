@@ -1,6 +1,8 @@
 // Сценарий целиком на настоящем Postgres (PGlite): мастер, услуги, слоты, запись, отмена, «выполнено».
 import { beforeAll, describe, expect, it } from 'vitest'
 import { sql } from 'drizzle-orm'
+import { EnumLegalDoc } from '@/api/types'
+import { CLIENT_DOCS, MASTER_DOCS } from '@/legal/documents'
 import { MASTER, SERVICE, testEnv, type TestEnv } from './helpers'
 
 // понедельник 19 октября 2026, 09:00 по Москве
@@ -62,7 +64,26 @@ describe('API', () => {
       expect(res.status).toBe(400)
     })
 
+    it('без принятых документов страницу не создать', async () => {
+      expect((await env.call('POST', '/api/masters', { token: master, body: MASTER })).body).toEqual({ error: 'consent_required' })
+      // только соглашение и политика — мало, нужно ещё согласие мастера
+      await env.accept(master, [EnumLegalDoc.Terms, EnumLegalDoc.Privacy])
+      expect((await env.call('POST', '/api/masters', { token: master, body: MASTER })).status).toBe(403)
+    })
+
+    it('старую редакцию документа принять нельзя', async () => {
+      const res = await env.call('POST', '/api/legal/consents', {
+        token: master,
+        body: { documents: [{ document: EnumLegalDoc.ConsentMaster, version: '2000-01-01' }] },
+      })
+      expect(res.status).toBe(409)
+    })
+
     it('создаёт профиль, второй — 409', async () => {
+      await env.accept(master, MASTER_DOCS)
+      await env.accept(stranger, MASTER_DOCS)
+      const accepted = await env.call('GET', '/api/legal/consents', { token: master })
+      expect(accepted.body).toHaveLength(3)
       const res = await env.call('POST', '/api/masters', { token: master, body: MASTER })
       expect(res.status).toBe(201)
       expect(res.body).toMatchObject({ slug: 'anna', theme: 'lavender', mascot: { head: 'crown' } })
@@ -140,6 +161,12 @@ describe('API', () => {
       expect((await env.call('GET', q)).status).toBe(401)
       expect((await env.call('GET', q, { token: stranger })).status).toBe(403)
       expect((await env.call('GET', q, { token: master })).body.slots[0]).toBe(AT_10)
+    })
+
+    it('без согласия клиентки запись не принимается', async () => {
+      expect((await book(AT_10)).body).toEqual({ error: 'consent_required' })
+      await env.accept(client, CLIENT_DOCS)
+      await env.accept(stranger, CLIENT_DOCS)
     })
 
     it('телефон обязателен клиентке и приводится к E.164', async () => {

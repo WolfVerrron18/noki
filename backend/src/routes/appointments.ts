@@ -12,7 +12,8 @@ import { badRequest, conflict, forbidden, notFound, pgCode, PG_EXCLUSION_VIOLATI
 import { toAppointment } from '~/lib/mappers'
 import { slotsFor } from '~/lib/slots'
 import { bookingInput, periodQuery, slotsQuery } from '~/lib/validation'
-import { findMaster, findService, idParam, ownMaster } from '~/routes/access'
+import { CLIENT_DOCS } from '@/legal/documents'
+import { findMaster, findService, idParam, ownMaster, requireDocs } from '~/routes/access'
 
 /**
  * Маршруты записей.
@@ -34,6 +35,8 @@ export function appointmentRoutes({ db, now }: AppDeps) {
     const service = await findService(db, master.id, input.serviceId)
     // скрытую услугу клиентка выбрать не может, мастер вручную — может
     if (!manual && !service.isActive) throw notFound('service_not_found')
+    // клиентка записывается, только приняв документы; за согласие клиентки при ручной записи отвечает мастер
+    if (!manual) await requireDocs(db, user.id, CLIENT_DOCS)
 
     // телефон — в E.164; клиентке обязателен, мастер может записать без него
     let phone = ''

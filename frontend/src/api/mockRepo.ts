@@ -5,6 +5,7 @@ import {
   isCancellable,
   normalizeSchedule,
   isCompletable,
+  type AcceptedDoc,
   type Appointment,
   type BookingInput,
   type EnumFeedbackRole,
@@ -15,6 +16,7 @@ import { freeSlots, MIN_LEAD_MIN, todayIn } from '@/utils/slots'
 import { normalizeLook } from '@/components/mascot/look'
 import { normalizeCategory } from '@/components/services/category'
 import { normalizePalette } from '@/styles/palettes'
+import { CLIENT_DOCS, LEGAL_VERSIONS, MASTER_DOCS, missingDocs } from '@/legal/documents'
 
 // Хранилище для режима просмотра без бэкенда. Только для разработки.
 const KEY = 'nidoki.mock.v1'
@@ -42,6 +44,8 @@ interface Db {
     /** Когда, ISO */
     created: string
   }[]
+  /** Принятые документы тестового пользователя */
+  consents: AcceptedDoc[]
 }
 
 /** Telegram id тестовой клиентки — тот же, что у тестового пользователя в режиме просмотра */
@@ -54,10 +58,12 @@ function load(): Db {
   } catch {
     // нет доступа к localStorage — работаем в памяти
   }
-  return { masters: [], services: [], appointments: [], feedback: [] }
+  return { masters: [], services: [], appointments: [], feedback: [], consents: [] }
 }
 
 const db = load()
+// старые тестовые данные без согласий: мастер увидит документы и примет их
+db.consents ??= []
 // старые тестовые данные без записей
 db.appointments ??= []
 // записи из старых тестовых данных — без заметки
@@ -113,6 +119,7 @@ function createAppointment(input: BookingInput, source: EnumAppointmentSource): 
   if (!master || !service) throw httpError(404)
   const manual = source === EnumAppointmentSource.Manual
   if (!manual && !service.is_active) throw httpError(404)
+  if (!manual && missingDocs(db.consents, CLIENT_DOCS).length) throw httpError(403)
   const start = Date.parse(input.startAt)
   const end = start + service.duration_min * 60000
   const date = todayIn(master.timezone, new Date(start))
@@ -163,6 +170,7 @@ export const mockRepo: Repo = {
   },
 
   async createMaster(userId, data) {
+    if (missingDocs(db.consents, MASTER_DOCS).length) throw httpError(403)
     const m = { ...data, id: id(), user: userId }
     db.masters.push(m)
     save()
@@ -267,5 +275,16 @@ export const mockRepo: Repo = {
   async sendFeedback(text, role) {
     db.feedback.push({ text, role, created: new Date().toISOString() })
     save()
+  },
+
+  async acceptedDocuments() {
+    return db.consents.map((c) => ({ ...c }))
+  },
+
+  async acceptDocuments(docs) {
+    if (docs.some((d) => LEGAL_VERSIONS[d.document] !== d.version)) throw httpError(409)
+    for (const d of docs) if (!db.consents.some((c) => c.document === d.document && c.version === d.version)) db.consents.push({ ...d })
+    save()
+    return db.consents.map((c) => ({ ...c }))
   },
 }

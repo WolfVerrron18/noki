@@ -1,8 +1,10 @@
 // Проверки доступа, общие для маршрутов: чей мастер, чья услуга.
+import type { AcceptedDoc, EnumLegalDoc } from '@/api/types'
+import { isLegalDoc, missingDocs } from '@/legal/documents'
 import { and, eq } from 'drizzle-orm'
 import type { AuthUser } from '~/app'
 import type { Db } from '~/db/client'
-import { masters, services, type MasterRow, type ServiceRow } from '~/db/schema'
+import { consents, masters, services, type MasterRow, type ServiceRow } from '~/db/schema'
 import { forbidden, notFound } from '~/lib/errors'
 
 /**
@@ -57,4 +59,25 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 export function idParam(id: string): string {
   if (!UUID_RE.test(id)) throw notFound()
   return id
+}
+
+/**
+ * Принятые пользователем документы.
+ * @param db база
+ * @param userId id пользователя
+ */
+export async function acceptedDocs(db: Db, userId: string): Promise<AcceptedDoc[]> {
+  const rows = await db.select({ document: consents.document, version: consents.version }).from(consents).where(eq(consents.userId, userId))
+  return rows.filter((r) => isLegalDoc(r.document)) as AcceptedDoc[]
+}
+
+/**
+ * Проверить, что пользователь принял нужные документы в текущей редакции.
+ * @param db база
+ * @param userId id пользователя
+ * @param required нужные документы
+ * @throws 403 consent_required
+ */
+export async function requireDocs(db: Db, userId: string, required: EnumLegalDoc[]): Promise<void> {
+  if (missingDocs(await acceptedDocs(db, userId), required).length) throw forbidden('consent_required')
 }

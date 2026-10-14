@@ -3,6 +3,8 @@ import { createApp } from '~/app'
 import type { Config } from '~/config'
 import { migrate, openDatabase, type Database } from '~/db/client'
 import { signInitData } from '~/auth/telegram'
+import type { EnumLegalDoc } from '@/api/types'
+import { currentVersions } from '@/legal/documents'
 
 export const BOT_TOKEN = 'test-bot-token'
 
@@ -14,6 +16,8 @@ export interface TestEnv {
   call: (method: string, path: string, opts?: { token?: string; body?: unknown }) => Promise<{ status: number; body: any }>
   /** Войти пользователем Telegram, вернуть токен */
   login: (telegramId: number, firstName?: string) => Promise<string>
+  /** Принять документы в текущей редакции */
+  accept: (token: string, docs: EnumLegalDoc[]) => Promise<void>
   /** Перевести часы */
   setNow: (iso: string) => void
   /** Отправленные ботом сообщения */
@@ -56,7 +60,12 @@ export async function testEnv(nowIso: string): Promise<TestEnv> {
     return res.body.token
   }
 
-  return { database, call, login, setNow: (iso) => (now = new Date(iso)), sent }
+  const accept: TestEnv['accept'] = async (token, docs) => {
+    const res = await call('POST', '/api/legal/consents', { token, body: { documents: currentVersions(docs) } })
+    if (res.status !== 200) throw new Error(`accept failed: ${res.status}`)
+  }
+
+  return { database, call, login, accept, setNow: (iso) => (now = new Date(iso)), sent }
 }
 
 /** Профиль мастера для тестов: Москва, пн–пт 10–19, сетка 30 минут */

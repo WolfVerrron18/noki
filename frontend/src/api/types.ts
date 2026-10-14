@@ -298,3 +298,23 @@ export interface Me {
   /** Имя из профиля Telegram */
   name: string
 }
+
+/** Юридический документ сервиса. Значения хранятся в базе (consents.document), не переименовываем */
+export enum EnumLegalDoc {
+  /** Пользовательское соглашение */
+  Terms = 'terms',
+  /** Политика обработки персональных данных */
+  Privacy = 'privacy',
+  /** Согласие мастера на обработку персональных данных */
+  ConsentMaster = 'consent-master',
+  /** Согласие клиентки на обработку персональных данных */
+  ConsentClient = 'consent-client',
+}
+
+/** Принятый пользователем документ */
+export interface AcceptedDoc {
+  /** Какой документ */
+  document: EnumLegalDoc
+  /** Версия, которую принял */
+  version: string
+}

@@ -87,3 +87,11 @@ export type MasterRow = typeof masters.$inferSelect
 export type ServiceRow = typeof services.$inferSelect
 /** Строка записи из базы */
 export type AppointmentRow = typeof appointments.$inferSelect
+
+export const consents = pgTable('consents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  document: text('document').notNull(),
+  version: text('version').notNull(),
+  acceptedAt: moment('accepted_at').notNull().defaultNow(),
+})

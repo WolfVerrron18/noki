@@ -7,7 +7,8 @@ import { masters } from '~/db/schema'
 import { conflict, notFound, pgCode, PG_UNIQUE_VIOLATION } from '~/lib/errors'
 import { masterColumns, toMaster } from '~/lib/mappers'
 import { masterInput, masterPatch } from '~/lib/validation'
-import { idParam, ownMaster, UUID_RE } from '~/routes/access'
+import { MASTER_DOCS } from '@/legal/documents'
+import { idParam, ownMaster, requireDocs, UUID_RE } from '~/routes/access'
 
 /**
  * Занятый адрес или второй профиль у того же пользователя — 409.
@@ -52,6 +53,8 @@ export function masterRoutes({ db }: AppDeps) {
   r.post('/api/masters', async (c) => {
     const user = requireUser(c)
     const data = masterInput.parse(await c.req.json())
+    // страницу создаёт только тот, кто принял соглашение, политику и дал согласие мастера
+    await requireDocs(db, user.id, MASTER_DOCS)
     const [m] = await db
       .insert(masters)
       .values({ ...(masterColumns(data) as typeof masters.$inferInsert), userId: user.id })

@@ -505,6 +505,23 @@ const en: Messages = {
     ownPage: 'This is your page — this is how clients see it',
     toCabinet: 'My space',
   },
+  legal: {
+    consent: 'I consent to the {link}',
+    consentLink: 'processing of my personal data',
+    byAction: 'By tapping “{action}”, you accept the {terms} and the {privacy}',
+    termsLink: 'terms of use',
+    privacyLink: 'personal data policy',
+    consentRequired: 'We need your consent to process your data — tick the box',
+    outdated: 'The documents have just been updated — please review the new version',
+    edition: 'Version of {date}',
+    ruOnly: 'This document is available in Russian, which is the legally binding version.',
+    documents: 'Documents',
+    update: {
+      title: 'Documents updated',
+      text: 'We have changed the terms of use or the data processing rules. Please review the new version to continue',
+      accept: 'Accept',
+    },
+  },
 }
 
 export default en

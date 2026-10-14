@@ -1,6 +1,6 @@
 // Проверка тел запросов. Всё, что пришло от клиента, проходит через эти схемы — фронту не доверяем.
 import { z } from 'zod'
-import { EnumScheduleMode, EnumSlotMode, NOTE_MAX, WEEKDAYS } from '@/api/types'
+import { EnumLegalDoc, EnumScheduleMode, EnumSlotMode, NOTE_MAX, WEEKDAYS } from '@/api/types'
 import { SLUG_RE } from '@/utils/slug'
 import { normalizeLook } from '@/components/mascot/look'
 import { normalizeCategory } from '@/components/services/category'
@@ -127,4 +127,12 @@ export const slotsQuery = z.object({
 export const periodQuery = z.object({
   from: z.string().datetime({ offset: true }),
   to: z.string().datetime({ offset: true }),
+})
+
+/** Принятые документы: какой и в какой редакции */
+export const consentsInput = z.object({
+  documents: z
+    .array(z.object({ document: z.nativeEnum(EnumLegalDoc), version: z.string().min(1).max(20) }))
+    .min(1)
+    .max(10),
 })

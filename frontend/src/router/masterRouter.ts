@@ -14,6 +14,12 @@ export const masterRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/master/OnboardingView.vue'),
   },
   {
+    path: '/m/legal',
+    name: 'master-legal',
+    component: () => import('@/views/master/MasterLegalView.vue'),
+    meta: { requiresMaster: true },
+  },
+  {
     path: '/m/profile',
     name: 'master-profile',
     component: () => import('@/views/master/ProfileView.vue'),

@@ -118,7 +118,7 @@
   <header>
     <span class="eyebrow">Бэкенд · PostgreSQL</span>
     <h1>Что хранит Nidoki</h1>
-    <p class="lead">Пять таблиц. Ниже по каждой: как запись выглядит для человека, какие у неё поля и зачем каждое нужно. Примеры придуманные.</p>
+    <p class="lead">Шесть таблиц. Ниже по каждой: как запись выглядит для человека, какие у неё поля и зачем каждое нужно. Примеры придуманные.</p>
     <div class="legend">
       <span><i class="tag money">деньги</i> нужно для аналитики мастера</span>
       <span><i class="tag private">личное</i> данные человека</span>
@@ -132,6 +132,7 @@
       <a href="#services"><b>services</b><small>услуги</small></a>
       <span class="arrow">→ много →</span>
       <a href="#appointments"><b>appointments</b><small>записи</small></a>
+      <a href="#consents" class="aside"><b>consents</b><small>принятые документы</small></a>
       <a href="#feedback" class="aside"><b>feedback</b><small>отзывы, отдельно</small></a>
     </div>
   </header>
@@ -271,6 +272,23 @@
         </tbody>
       </table></div>
     </div>
+  </section>
+
+  <!-- consents -->
+  <section class="table" id="consents">
+    <div class="table-head">
+      <h2>Принятые документы <code>consents</code></h2>
+      <p>Доказательство согласия по закону о персональных данных: кто, какой документ, в какой редакции и когда принял. Мастер принимает документы при создании страницы, клиентка — при записи. Вышла новая редакция — добавляется новая строка, старые остаются.</p>
+    </div>
+    <div class="fields"><table>
+      <thead><tr><th>Поле</th><th>Пример</th><th>Зачем</th></tr></thead>
+      <tbody>
+        <tr><td>user_id</td><td>9f1c…a2</td><td>Кто принял <i class="tag tech">служебное</i></td></tr>
+        <tr><td>document</td><td>consent-client</td><td>Какой документ: terms — соглашение, privacy — политика, consent-master и consent-client — согласия на обработку данных</td></tr>
+        <tr><td>version</td><td>2026-10-14</td><td>Редакция документа: какой именно текст человек видел</td></tr>
+        <tr><td>accepted_at</td><td>2026-10-17 10:02</td><td>Когда принял</td></tr>
+      </tbody>
+    </table></div>
   </section>
 
   <!-- feedback -->

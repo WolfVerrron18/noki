@@ -9,6 +9,11 @@
 
     <ProfileFields :ctx="ctx" />
 
+    <section class="docs">
+      <h2>{{ t('legal.documents') }}</h2>
+      <RouterLink v-for="doc in MASTER_DOCS" :key="doc" :to="{ name: 'legal-doc', params: { doc } }">{{ legalText(doc).title }}</RouterLink>
+    </section>
+
     <p v-if="ctx.errors.save" class="error">{{ ctx.errors.save }}</p>
 
     <NokiMainButton :text="t('common.save')" :disabled="!ctx.dirty.value" :loading="ctx.saving.value" @click="onSave" />
@@ -24,11 +29,14 @@ import NokiMainButton from '@/components/ui/NokiMainButton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import ProfileFields from '@/components/master/ProfileFields.vue'
 import { useMasterForm } from '@/composables/useMasterForm'
+import { useLegalText } from '@/composables/useLegalText'
+import { MASTER_DOCS } from '@/legal/documents'
 import { haptic } from '@/telegram'
 
 const { t } = useI18n()
 const router = useRouter()
 const ctx = useMasterForm()
+const legalText = useLegalText()
 
 async function back() {
   if (await ctx.confirmLeave()) router.back()
@@ -48,6 +56,20 @@ async function onSave() {
   gap: var(--space-md);
 
   p { margin: 0; }
+}
+
+.docs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+
+  h2 { margin: 0; font-size: var(--font-size-md); }
+
+  a {
+    color: var(--primary-600);
+    font-size: var(--font-size-sm);
+    text-underline-offset: 2px;
+  }
 }
 
 .error {

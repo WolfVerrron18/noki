@@ -11,6 +11,7 @@ import { masterRoutes } from '~/routes/masters'
 import { serviceRoutes } from '~/routes/services'
 import { appointmentRoutes } from '~/routes/appointments'
 import { feedbackRoutes } from '~/routes/feedback'
+import { legalRoutes } from '~/routes/legal'
 
 /** Всё, что нужно обработчикам */
 export interface AppDeps {
@@ -63,5 +64,6 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   app.route('/', serviceRoutes(deps))
   app.route('/', appointmentRoutes(deps))
   app.route('/', feedbackRoutes(deps))
+  app.route('/', legalRoutes(deps))
   return app
 }

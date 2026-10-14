@@ -14,7 +14,10 @@
     </div>
 
     <Transition name="slide" mode="out-in">
-      <ProfileFields v-if="step === 1" key="1" :ctx="ctx" />
+      <div v-if="step === 1" key="1" class="stack">
+        <ProfileFields :ctx="ctx" />
+        <LegalConsent v-model="consent" :action="t('common.next')" :consent="EnumLegalDoc.ConsentMaster" :error="consentError" />
+      </div>
       <HoursFields v-else key="2" ref="hoursFields" :ctx="ctx" />
     </Transition>
 
@@ -38,7 +41,10 @@ import ProfileFields from '@/components/master/ProfileFields.vue'
 import HoursFields from '@/components/master/HoursFields.vue'
 import { useMasterForm } from '@/composables/useMasterForm'
 import { haptic } from '@/telegram'
-import { EnumSlotMode } from '@/api/types'
+import { EnumLegalDoc, EnumSlotMode } from '@/api/types'
+import LegalConsent from '@/components/legal/LegalConsent.vue'
+import { MASTER_DOCS } from '@/legal/documents'
+import { useLegal } from '@/stores/legal'
 
 const TOTAL = 2
 const { t } = useI18n()
@@ -46,6 +52,10 @@ const router = useRouter()
 const ctx = useMasterForm()
 
 const step = ref(1)
+const legal = useLegal()
+/** Галочка согласия мастера; уже давала (вернулась на шаг 1) — отмечена */
+const consent = ref(!legal.missing(MASTER_DOCS).length)
+const consentError = ref('')
 const hoursFields = ref<InstanceType<typeof HoursFields> | null>(null)
 
 const title = computed(() => (step.value === 1 ? t('onboarding.profile.title') : t('onboarding.hours.title')))
@@ -58,7 +68,16 @@ const mainText = computed(() => {
 
 async function onMain() {
   if (step.value === 1) {
-    if (!(await ctx.validateProfile())) return haptic.error()
+    consentError.value = consent.value ? '' : t('legal.consentRequired')
+    const profileOk = await ctx.validateProfile()
+    if (!profileOk || !consent.value) return haptic.error()
+    // документы принимаются здесь: без них сервер не создаст страницу на шаге 2
+    try {
+      await legal.accept(MASTER_DOCS)
+    } catch (e) {
+      ctx.errors.save = (e as { status?: number }).status === 409 ? t('legal.outdated') : t('common.error')
+      return haptic.error()
+    }
     step.value = 2
     return
   }

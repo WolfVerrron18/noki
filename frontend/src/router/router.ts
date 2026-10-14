@@ -2,8 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { masterRoutes } from '@/router/masterRouter'
 import { clientRoutes } from '@/router/clientRouter'
 import { devRoutes } from '@/router/devRouter'
+import { legalRoutes } from '@/router/legalRouter'
 import { useAuth } from '@/stores/auth'
 import { useMaster } from '@/stores/master'
+import { useLegal } from '@/stores/legal'
+import { MASTER_DOCS } from '@/legal/documents'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -23,6 +26,7 @@ export const router = createRouter({
     ...masterRoutes,
     ...clientRoutes,
     ...devRoutes,
+    ...legalRoutes,
     { path: '/:pathMatch(.*)*', redirect: { name: 'start' } },
   ],
 })
@@ -39,8 +43,9 @@ router.beforeEach(async (to) => {
   const isOnboarding = to.name === 'master-onboarding'
   if (to.meta.requiresMaster || isOnboarding) {
     const store = useMaster()
+    const legal = useLegal()
     try {
-      await store.load()
+      await Promise.all([store.load(), legal.load()])
     } catch {
       auth.error = 'common.networkError'
       return { name: 'start' }
@@ -48,6 +53,10 @@ router.beforeEach(async (to) => {
     if (to.meta.requiresMaster && !store.master) return { name: 'master-onboarding' }
     // профиль уже есть — повторный онбординг не нужен
     if (isOnboarding && store.master) return { name: 'master-home' }
+    // вышла новая редакция документов — сначала принять её, потом в кабинет
+    if (store.master && to.name !== 'master-legal' && legal.missing(MASTER_DOCS).length) {
+      return { name: 'master-legal', query: { redirect: to.fullPath } }
+    }
   }
   return true
 })
