@@ -69,6 +69,85 @@ const en: Messages = {
     skip: 'Skip',
     done: 'Got it',
     replay: 'How to use the app',
+    demo: 'Show me an example',
+    hours: {
+      slotMode: {
+        title: 'How clients book',
+        text: 'Noki will show you with an example. "By hours" — a client picks any free time within your hours. "Exact times" — only the start times you set yourself',
+      },
+      step: {
+        title: 'Booking step',
+        text: 'How often a booking can start: with a 30-minute step a client sees 10:00, 10:30, 11:00',
+      },
+      scheduleMode: {
+        title: 'Schedule',
+        text: '"Every week" — the same days every week. "By dates" — mark working days in a calendar if your schedule varies',
+      },
+      presets: {
+        title: 'Quick pick',
+        text: 'Turns on the days you need at once, with the same hours',
+      },
+      day: {
+        title: 'Hours of a day',
+        text: 'Each day has its own hours: tap a time to change it. Noki will move Monday to 11:00–20:00',
+      },
+      pause: {
+        title: 'Break',
+        text: 'For lunch or travel — as many breaks as you need. Clients cannot book during them',
+      },
+      dayOff: {
+        title: 'Working day or day off',
+        text: 'The switch turns a day on — it takes the hours of the first working day. That was an example: your hours will go back as they were',
+      },
+    },
+    dates: {
+      select: {
+        title: 'Picking days',
+        text: 'Noki will show you with an example: slide your finger across days to select them at once. You can also tap them one by one',
+      },
+      selection: {
+        title: 'Selected days',
+        text: 'Here you can see how many days are selected. The main button became "Set hours" — it opens the hours sheet',
+      },
+      unselect: {
+        title: 'Unselect',
+        text: 'Slide across already selected days to unselect them. The day you start on decides what happens',
+      },
+      apply: {
+        title: 'Hours for selected days',
+        text: 'In the sheet you set hours, breaks and templates. Noki set 10–19 — the hours show right in the cells. That was an example: everything will go back as it was',
+      },
+    },
+    service: {
+      category: {
+        title: 'Service type',
+        text: 'Noki will show you with an example. First the type: it sets the icon next to the service and suggests popular services below',
+      },
+      presets: {
+        title: 'Popular services',
+        text: 'Tap a ready-made service to fill in the name and duration — then adjust it to suit you',
+      },
+      name: {
+        title: 'Name',
+        text: 'You can write your own — this is exactly how clients will see it',
+      },
+      duration: {
+        title: 'Duration',
+        text: 'Pick a ready one or your own: tap left of the number to decrease, right to increase',
+      },
+      price: {
+        title: 'Price',
+        text: 'Type the amount or add with the buttons below the field',
+      },
+      description: {
+        title: 'Description',
+        text: 'Optional: what is included and how to prepare',
+      },
+      visible: {
+        title: 'Visibility',
+        text: 'Turn it off to hide the service for a while. That was an example — the form will clear so you can add your own',
+      },
+    },
     master: {
       link: {
         title: 'Your booking link',
@@ -200,6 +279,7 @@ const en: Messages = {
     durationCustom: 'Custom, minutes',
     price: 'Price',
     pricePlaceholder: '0',
+    demoDescription: 'I have everything you need, just come 5 minutes early',
     nameRequired: 'Enter a name',
     durationInvalid: '5 to 600 minutes',
     priceInvalid: 'Price cannot be negative',
@@ -312,7 +392,7 @@ const en: Messages = {
     confirmTitle: 'Check your booking',
     name: 'Your name',
     phone: 'Phone',
-    phonePlaceholder: '+1 555 000 0000',
+    phonePlaceholder: '900 000 00 00',
     nameRequired: 'Enter your name',
     phoneInvalid: 'Check the phone number',
     note: 'Note for your beauty pro',
@@ -392,7 +472,11 @@ const en: Messages = {
     week: 'Week',
     month: 'Month',
     period: '{from} — {to}',
-    monthLegend: 'The number shows bookings that day. Pink days are working days. Tap a day to open it',
+    legend: {
+      work: 'Working day',
+      booked: 'Bookings — one dot each',
+      tap: 'Tap a day to open it',
+    },
     prev: 'Earlier',
     next: 'Later',
     empty: 'No bookings',
@@ -407,10 +491,11 @@ const en: Messages = {
     note: 'Note',
     notePlaceholder: 'For example: coming with a friend',
     save: 'Save booking',
+    pickTime: 'Pick a time for the booking',
     cancelled: 'Cancelled',
     manual: 'Added manually',
     done: 'Done',
-    markDone: 'Mark done',
+    markDone: 'Mark as done',
     cancelConfirm: "Cancel the client's booking?",
     noServices: 'Add at least one service first',
   },

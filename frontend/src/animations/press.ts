@@ -15,6 +15,8 @@ interface PressState {
   up: () => void
   /** Текущая глубина */
   depth: number
+  /** Элемент сейчас нажат: уход мыши без нажатия не должен запускать пружину */
+  pressed: boolean
 }
 
 const states = new WeakMap<HTMLElement, PressState>()
@@ -37,10 +39,12 @@ export const vPress: Directive<HTMLElement, PressOptions | undefined> = {
 
     const state: PressState = {
       depth: binding.value?.depth ?? 0.06,
+      pressed: false,
       down(e) {
         if (prefersReducedMotion() || isDisabled(el) || e.button > 0) return
         // касание внутри [data-no-press] (например, ручка перетаскивания) — не проседаем
         if ((e.target as Element | null)?.closest?.('[data-no-press]')) return
+        state.pressed = true
         gsap.to(el, {
           scaleX: 1 - state.depth * 0.6,
           scaleY: 1 - state.depth,
@@ -51,7 +55,9 @@ export const vPress: Directive<HTMLElement, PressOptions | undefined> = {
         })
       },
       up() {
-        if (prefersReducedMotion()) return
+        // мышь просто прошла над элементом — не трогаем его: иначе пружина перебивала появление списка
+        if (!state.pressed || prefersReducedMotion()) return
+        state.pressed = false
         gsap.to(el, {
           scaleX: 1,
           scaleY: 1,
@@ -92,4 +98,18 @@ declare module 'vue' {
     /** Желейная реакция на нажатие (GSAP) */
     vPress: typeof vPress
   }
+}
+
+/**
+ * Проиграть желейное нажатие без касания самого элемента: когда действие кнопки вызвали из другого места
+ * (например, тап по половине поля в NokiNumberInput «нажимает» его кнопку − или +).
+ * @param el элемент
+ * @param depth глубина проседания, как в v-press
+ */
+export function playPress(el: HTMLElement | null | undefined, depth = 0.06) {
+  if (!el || prefersReducedMotion()) return
+  gsap
+    .timeline({ overwrite: 'auto' })
+    .to(el, { scaleX: 1 - depth * 0.6, scaleY: 1 - depth, duration: 0.1, ease: 'power2.out' })
+    .to(el, { scaleX: 1, scaleY: 1, duration: 0.7, ease: 'elastic.out(1.2, 0.35)' })
 }

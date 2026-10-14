@@ -182,10 +182,16 @@ function shift(dir: 1 | -1) {
 let drag: { from: string; on: boolean; moved: boolean; seen: Set<string> } | null = null
 let swallowClick = false
 
+// день под пальцем — сквозь слои поверх календаря (затемнение тура, когда Ноки показывает протягивание)
 const dateAt = (e: PointerEvent) =>
-  (document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-date]') as HTMLElement | null)?.dataset.date
+  document
+    .elementsFromPoint(e.clientX, e.clientY)
+    .map((el) => el.closest<HTMLElement>('[data-date]'))
+    .find((el) => el && el.closest('.grid') === e.currentTarget)?.dataset.date
 
 function dragStart(e: PointerEvent) {
+  // после протягивания клик по клетке бывает не всегда — флаг не должен съесть следующий тап
+  swallowClick = false
   if (!props.dragSelect) return
   const date = dateAt(e)
   if (date) drag = { from: date, on: !isSelected(date), moved: false, seen: new Set() }
@@ -300,7 +306,6 @@ function onClick(date: string) {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 
-  &.today { border-color: var(--secondary-300); }
   &.past { opacity: 0.4; }
   &:disabled { cursor: default; }
 
@@ -324,5 +329,22 @@ function onClick(date: string) {
 .num {
   font-weight: var(--font-weight-bold);
   line-height: 1;
+
+  // сегодня — число в залитом кружке цвета темы: обводка клетки терялась на подложке того же цвета
+  .today & {
+    display: grid;
+    place-items: center;
+    width: 1.6em;
+    height: 1.6em;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: var(--on-primary);
+  }
+
+  // выбранная клетка уже залита цветом темы — кружок наоборот
+  .today.selected & {
+    background: var(--on-primary);
+    color: var(--primary-500);
+  }
 }
 </style>

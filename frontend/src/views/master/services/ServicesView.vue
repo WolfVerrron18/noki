@@ -13,6 +13,7 @@
         v-for="s in items"
         :key="s.id"
         v-press="{ depth: 0.03 }"
+        v-fill
         :class="{ hidden: !s.is_active }"
         @click="router.push({ name: 'master-service-edit', params: { id: s.id } })"
       >
@@ -44,6 +45,10 @@
     <p v-if="toggleError" class="error">{{ toggleError }}</p>
 
     <NokiButton @click="router.push({ name: 'master-service-new' })">{{ t('services.add') }}</NokiButton>
+    <!-- Ноки сам заполнит форму новой услуги на примере; пример не сохраняется -->
+    <button type="button" class="demo-link" @click="router.push({ name: 'master-service-new', query: { demo: '1' } })">
+      {{ t('tour.demo') }}
+    </button>
   </div>
 </template>
 
@@ -82,10 +87,13 @@ const sortable = useDraggable(listEl, items, {
   ghostClass: 'ghost',
   chosenClass: 'chosen',
   onStart() {
+    // пока тащим, заливка карточек не запускается (см. v-fill)
+    listEl.value?.setAttribute('data-dragging', '')
     lockVerticalSwipes(true)
     haptic.tap()
   },
   onEnd() {
+    listEl.value?.removeAttribute('data-dragging')
     lockVerticalSwipes(false)
   },
   onUpdate(e) {
@@ -133,9 +141,11 @@ async function toggle(s: Service, on: boolean) {
     background: var(--bg-card);
     box-shadow: var(--shadow);
     cursor: pointer;
-    transition: opacity 0.2s;
 
-    &.hidden { opacity: 0.6; }
+    // скрытая услуга: тусклые иконка и текст, тумблер яркий. Не opacity всей карточки —
+    // её анимирует каскадное появление, и затемнение включалось бы только после него
+    > :not(.switch):not(.grip) { transition: opacity 0.2s; }
+    &.hidden > :not(.switch):not(.grip) { opacity: 0.55; }
   }
 }
 
@@ -168,6 +178,9 @@ async function toggle(s: Service, on: boolean) {
 .chosen { box-shadow: var(--shadow), var(--shadow); }
 .ghost { opacity: 0.4; }
 
+// у копии в пальце и у места, куда встанет карточка, — без заливки: копия поймала бы её на полпути
+.chosen :deep(.noki-fill) { visibility: hidden; }
+
 .name { font-weight: var(--font-weight-bold); }
 
 .meta {
@@ -190,6 +203,20 @@ async function toggle(s: Service, on: boolean) {
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+}
+
+.demo-link {
+  align-self: center;
+  padding: var(--space-sm) var(--space-md);
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .error {

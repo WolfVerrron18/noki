@@ -15,11 +15,23 @@
       :months-ahead="6"
       @pick="openDay"
     >
+      <!-- записи дня — точками, по одной на запись; больше трёх — три точки и «+» -->
       <template #day="{ date }">
-        <span v-if="countOn(date)" class="count">{{ countOn(date) }}</span>
+        <span v-if="countOn(date)" class="dots day-dots" aria-hidden="true">
+          <i v-for="n in Math.min(countOn(date), MAX_DOTS)" :key="n" />
+          <b v-if="countOn(date) > MAX_DOTS">+</b>
+        </span>
       </template>
     </NokiCalendar>
-    <p v-if="mode === 'month'" class="hint legend">{{ t('schedule.monthLegend') }}</p>
+    <!-- легенда образцами, а не названием цвета: у мастера может быть любая тема -->
+    <div v-if="mode === 'month'" class="legend">
+      <span class="legend-item"><i class="legend-work" aria-hidden="true" />{{ t('schedule.legend.work') }}</span>
+      <span class="legend-item">
+        <span class="dots" aria-hidden="true"><i /><i /></span>
+        {{ t('schedule.legend.booked') }}
+      </span>
+      <p class="hint">{{ t('schedule.legend.tap') }}</p>
+    </div>
 
     <div v-if="mode !== 'month'" class="nav">
       <button v-press="{ depth: 0.12 }" type="button" class="arrow" :aria-label="t('schedule.prev')" @click="shift(-1)">
@@ -32,14 +44,14 @@
     </div>
 
     <template v-if="mode !== 'month'">
-    <div v-if="loading" class="stack center state">
-      <NokiMascot :size="110" />
-    </div>
-
-    <div v-else-if="!activeCount" class="stack center state">
+    <!-- один и тот же Ноки, пока листаем пустые дни: не перезапускается и не мигает.
+         Пока грузится следующий период, на экране остаётся предыдущий -->
+    <div v-if="!activeCount" class="stack center state">
       <NokiMascot mood="sleepy" :size="120" />
-      <p>{{ t('schedule.empty') }}</p>
-      <p class="hint">{{ t('schedule.emptyHint') }}</p>
+      <div class="state-text" :class="{ pending: !loaded }">
+        <p>{{ t('schedule.empty') }}</p>
+        <p class="hint">{{ t('schedule.emptyHint') }}</p>
+      </div>
     </div>
 
     <div v-else ref="listEl" class="stack">
@@ -89,6 +101,9 @@ import dayjs from '@/utils/date'
 import { confirmDialog, haptic } from '@/telegram'
 import { useStaggerIn } from '@/animations/useStaggerIn'
 
+/** Больше точек в клетке месяца не рисуем */
+const MAX_DOTS = 3
+
 /** Режим показа */
 type Mode = 'day' | 'week' | 'month'
 
@@ -104,6 +119,8 @@ const mode = ref<Mode>('day')
 const anchor = ref(typeof route.query.date === 'string' ? route.query.date : todayIn(master.value.timezone))
 const list = ref<Appointment[]>([])
 const loading = ref(false)
+/** Первый период загружен: до этого не пишем «Записей нет» */
+const loaded = ref(false)
 const error = ref('')
 
 // записи нового периода выезжают каскадом
@@ -194,6 +211,7 @@ async function load() {
     error.value = t('common.error')
   } finally {
     loading.value = false
+    loaded.value = true
   }
 }
 
@@ -262,18 +280,68 @@ watch([mode, anchor], load, { immediate: true })
   }
 }
 
-.count {
-  min-width: calc(var(--space-md) + var(--space-xs));
-  padding: 0 var(--space-xs);
-  border-radius: var(--radius-pill);
-  background: var(--secondary-500);
-  color: var(--on-primary);
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  line-height: 1.5;
+.dots {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space-xs) / 2);
+  height: var(--space-sm);
+
+  i {
+    width: calc(var(--space-xs) * 1.5);
+    height: calc(var(--space-xs) * 1.5);
+    border-radius: 50%;
+    background: var(--primary-500);
+  }
+
+  b {
+    color: var(--primary-500);
+    font-size: var(--font-size-2xs);
+    line-height: 1;
+  }
 }
 
-.legend { margin: 0; }
+// у нижнего края клетки: число дня стоит на том же месте, что и в клетках без записей
+.day-dots {
+  position: absolute;
+  bottom: calc(var(--space-xs) / 2);
+  height: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-sm);
+
+  p { flex-basis: 100%; margin: 0; }
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+// образец рабочего дня — как клетка календаря
+.legend-work {
+  width: var(--space-lg);
+  height: var(--space-lg);
+  border-radius: var(--radius-sm);
+  background: var(--primary-100);
+}
+
+.state-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+
+  // первый период ещё грузится: место под текст занято, сам текст не виден
+  &.pending { visibility: hidden; }
+}
 
 .day h2 {
   margin: 0;

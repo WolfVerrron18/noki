@@ -4,6 +4,7 @@
 
     <NokiCalendar
       v-model:month="month"
+      data-tour="calendar"
       :mode="view"
       drag-select
       :timezone="timezone"
@@ -21,7 +22,7 @@
     </NokiCalendar>
 
     <!-- строка статуса всегда одной высоты: интерфейс не прыгает, когда появляется выбор -->
-    <div class="status">
+    <div class="status" data-tour="selection">
       <template v-if="selected.size">
         <span>{{ t('scheduleEditor.selected', selected.size) }}</span>
         <button type="button" class="link" @click="clearSelection">{{ t('scheduleEditor.unselect') }}</button>
@@ -286,7 +287,26 @@ function removeTemplate(id: string) {
   else templates.value = templates.value.filter((tpl) => tpl.id !== id)
 }
 
-defineExpose({ openSheet })
+/** Убрать подсказку «?»: тур рассказывает то же самое */
+function hideHint() {
+  hint.hide()
+}
+
+/** Выбранные дни — для снимка в туре-примере */
+function getSelection(): string[] {
+  return [...selected]
+}
+
+/**
+ * Выбрать ровно эти дни (тур возвращает выбор при «Назад»).
+ * @param dates дни "YYYY-MM-DD"
+ */
+function setSelection(dates: string[]) {
+  selected.clear()
+  for (const d of dates) selected.add(d)
+}
+
+defineExpose({ openSheet, applyDay, clearSelection, hideHint, getSelection, setSelection })
 </script>
 
 <style scoped lang="scss">

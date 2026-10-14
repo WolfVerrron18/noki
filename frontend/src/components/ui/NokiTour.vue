@@ -13,8 +13,9 @@
         <rect v-if="hole" :x="hole.x" :y="hole.y" :width="hole.w" :height="hole.h" :rx="HOLE_RADIUS" class="ring" />
       </svg>
 
+      <!-- пузырь появляется, когда прокрутка к элементу закончилась: на ходу он прыгал бы за ним -->
       <Transition name="bubble" mode="out-in">
-        <section :key="tour.index.value" class="bubble" :class="placement" :style="bubbleStyle" aria-live="polite">
+        <section v-if="settled" :key="tour.index.value" class="bubble" :class="placement" :style="bubbleStyle" aria-live="polite">
           <!-- место под Ноки в пузыре: нарисуем позже -->
           <slot name="noki" />
           <span class="count">{{ t('tour.step', { n: tour.index.value + 1, total: tour.total.value }) }}</span>
@@ -54,8 +55,10 @@ import { haptic } from '@/telegram'
 /** Отступ окошка от элемента и скругление окошка, px (координаты SVG) */
 const HOLE_PAD = 8
 const HOLE_RADIUS = 18
-/** Насколько быстро окошко догоняет элемент за кадр (0..1) */
+/** Насколько быстро окошко перетекает к новому элементу за кадр (0..1) */
 const FOLLOW = 0.22
+/** Сколько кадров подряд ничего не двигается — прокрутка закончилась, можно показать пузырь */
+const SETTLE_FRAMES = 6
 
 /** Прямоугольник окошка в координатах экрана */
 interface Box {
@@ -74,38 +77,67 @@ const tour = useTour()
 const step = computed(() => tour.step.value)
 const maskId = `tour-mask-${Math.random().toString(36).slice(2, 8)}`
 
+/** Окошко на экране — то, что рисуется */
 const hole = ref<Box | null>(null)
 const nextBtn = ref<HTMLButtonElement | null>(null)
+/** Прокрутка к элементу шага закончилась: пузырь показан, действие шага запущено */
+const settled = ref(false)
+/** С какой стороны пузырь: выбирается один раз за шаг, иначе на границе он прыгал вверх-вниз */
+const placement = ref<'below' | 'above'>('below')
 let frame = 0
+/** Окошко в координатах страницы: перетекает между элементами, а прокрутка двигает его без отставания */
+let pageBox: Box | null = null
+let stillFrames = 0
+let lastScroll = Number.NaN
 
-/** Где элемент сейчас на экране (или null, если его нет) */
+/** Где элемент в координатах страницы (или null, если его нет) */
 function measure(): Box | null {
   const el = step.value && document.querySelector(`[data-tour="${step.value.target}"]`)
   if (!el) return null
   const r = el.getBoundingClientRect()
-  return { x: r.left - HOLE_PAD, y: r.top - HOLE_PAD, w: r.width + HOLE_PAD * 2, h: r.height + HOLE_PAD * 2 }
+  return { x: r.left + window.scrollX - HOLE_PAD, y: r.top + window.scrollY - HOLE_PAD, w: r.width + HOLE_PAD * 2, h: r.height + HOLE_PAD * 2 }
 }
 
-// окошко каждый кадр следует за элементом: прокрутка, смена шага и раскладка его не теряют
+/** Почти совпадают: перерисовывать незачем */
+const same = (a: Box | null, b: Box | null) =>
+  !!a && !!b && Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.w - b.w) < 0.5 && Math.abs(a.h - b.h) < 0.5
+
+/**
+ * Сторона пузыря — где больше места.
+ * @param box окошко на экране
+ */
+function sideFor(box: Box | null): 'below' | 'above' {
+  if (!box) return 'below'
+  return window.innerHeight - (box.y + box.h) >= box.y ? 'below' : 'above'
+}
+
+// каждый кадр: окошко следует за элементом (смена шага, раскладка, прокрутка), но перерисовка — только если сдвинулось
 function follow() {
   const target = measure()
   if (target) {
-    const cur = hole.value
-    if (!cur || prefersReducedMotion()) hole.value = target
+    if (!pageBox || prefersReducedMotion()) pageBox = target
     else {
       const lerp = (a: number, b: number) => (Math.abs(b - a) < 0.5 ? b : a + (b - a) * FOLLOW)
-      hole.value = { x: lerp(cur.x, target.x), y: lerp(cur.y, target.y), w: lerp(cur.w, target.w), h: lerp(cur.h, target.h) }
+      pageBox = { x: lerp(pageBox.x, target.x), y: lerp(pageBox.y, target.y), w: lerp(pageBox.w, target.w), h: lerp(pageBox.h, target.h) }
+    }
+    const view = { ...pageBox, x: pageBox.x - window.scrollX, y: pageBox.y - window.scrollY }
+    if (!same(view, hole.value)) hole.value = view
+  }
+
+  // ждём, пока прокрутка и окошко успокоятся: тогда пузырь встаёт на место и Ноки начинает действие шага
+  if (!settled.value) {
+    const still = window.scrollY === lastScroll && (!target || same(pageBox, target))
+    stillFrames = still ? stillFrames + 1 : 0
+    lastScroll = window.scrollY
+    if (stillFrames >= SETTLE_FRAMES) {
+      placement.value = sideFor(hole.value)
+      settled.value = true
+      tour.ready()
+      nextTick(() => nextBtn.value?.focus({ preventScroll: true }))
     }
   }
   frame = requestAnimationFrame(follow)
 }
-
-/** Пузырь под элементом, если он в верхней половине экрана, иначе над ним */
-const placement = computed(() => {
-  const h = hole.value
-  if (!h) return 'below'
-  return h.y + h.h / 2 < window.innerHeight / 2 ? 'below' : 'above'
-})
 
 const bubbleStyle = computed(() => {
   const h = hole.value
@@ -115,12 +147,14 @@ const bubbleStyle = computed(() => {
     : { bottom: `${window.innerHeight - h.y + HOLE_PAD}px` }
 })
 
-/** Новый шаг: прокрутить к элементу и перевести фокус на «Дальше» */
+/** Новый шаг: спрятать пузырь до конца прокрутки и прокрутить к элементу */
 async function show() {
+  settled.value = false
+  stillFrames = 0
+  lastScroll = Number.NaN
   await nextTick()
   const el = step.value && document.querySelector(`[data-tour="${step.value.target}"]`)
   el?.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
-  nextBtn.value?.focus({ preventScroll: true })
 }
 
 watch(
@@ -129,6 +163,8 @@ watch(
     cancelAnimationFrame(frame)
     if (!active) {
       hole.value = null
+      pageBox = null
+      settled.value = false
       document.body.style.overflow = ''
       return
     }

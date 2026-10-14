@@ -197,7 +197,9 @@ h2 { margin: 0; font-size: var(--font-size-md); }
   width: var(--control-height);
   height: var(--control-height);
   border-radius: 50%;
-  background: conic-gradient(from 200deg, var(--primary-500) 0 50%, var(--secondary-500) 0 75%, var(--cute-500) 0);
+  // только то, что тема реально красит: кнопки (500), светлые акценты (400) и мягкие подложки (100)
+  background: conic-gradient(from 200deg, var(--primary-500) 0 50%, var(--primary-400) 0 75%, var(--primary-100) 0);
+  box-shadow: inset 0 0 0 2px var(--primary-200);
 }
 
 .options {

@@ -17,7 +17,10 @@
         <NokiMascot :size="96" />
       </div>
       <p v-else-if="!slots.length" class="hint center">{{ t('booking.noSlots') }}</p>
-      <SlotGrid v-else v-model="start" :slots="slots" :timezone="master.timezone" />
+      <div v-else ref="slotsEl" class="slots">
+        <SlotGrid v-model="start" :slots="slots" :timezone="master.timezone" />
+        <p v-if="errors.start" class="error">{{ errors.start }}</p>
+      </div>
 
       <NokiInput v-model="clientName" :label="t('schedule.clientName')" :error="errors.name" />
       <NokiPhoneInput
@@ -31,7 +34,7 @@
       <NokiTextarea v-model="note" :rows="2" :maxlength="NOTE_MAX" :label="t('schedule.note')" :placeholder="t('schedule.notePlaceholder')" />
 
       <p v-if="errors.save" class="error">{{ errors.save }}</p>
-      <NokiMainButton :text="t('schedule.save')" :loading="saving" :disabled="!start" @click="save" />
+      <NokiMainButton :text="t('schedule.save')" :loading="saving" @click="save" />
     </template>
   </div>
 </template>
@@ -85,10 +88,12 @@ const clientName = ref('')
 const clientPhone = ref('')
 const note = ref('')
 const saving = ref(false)
-const errors = reactive<{ name?: string; phone?: string; save?: string }>({})
+const errors = reactive<{ start?: string; name?: string; phone?: string; save?: string }>({})
+const slotsEl = ref<HTMLElement | null>(null)
 
 const { slots, loading, reload } = useSlots(master, service, date, true)
 watch([date, serviceId], () => (start.value = null))
+watch(start, (v) => v && (errors.start = undefined))
 
 function back() {
   router.push({ name: 'master-schedule', query: { date: date.value } })
@@ -99,8 +104,10 @@ async function save() {
   // телефон необязателен, но если введён — только верный
   const phone = clientPhone.value.trim() ? normalizePhone(clientPhone.value, country.value) : ''
   errors.phone = phone === null ? t('booking.phoneInvalid') : undefined
+  errors.start = start.value ? undefined : t('schedule.pickTime')
   errors.save = undefined
-  if (errors.name || errors.phone || !start.value) return haptic.error()
+  if (errors.start) slotsEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  if (errors.start || errors.name || errors.phone || !start.value) return haptic.error()
 
   saving.value = true
   try {
@@ -131,6 +138,12 @@ async function save() {
   padding: var(--space-md) 0;
 
   p { margin: 0; }
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .error {

@@ -2,16 +2,21 @@
   <div class="stack">
     <NokiSelect v-model="form.timezone" :label="t('onboarding.time.timezone')" :options="tzOptions" />
 
-    <NokiSegmented v-model="form.slot_mode" :label="t('scheduleEditor.slotMode')" :options="slotModeOptions" />
-    <p class="hint">{{ fixed ? t('scheduleEditor.slotFixedHint') : t('scheduleEditor.slotGridHint') }}</p>
+    <!-- блоки «вариант + пояснение» обёрнуты, чтобы тур подсвечивал их целиком (data-tour) -->
+    <div class="stack" data-tour="slot-mode">
+      <NokiSegmented v-model="form.slot_mode" :label="t('scheduleEditor.slotMode')" :options="slotModeOptions" />
+      <p class="hint">{{ fixed ? t('scheduleEditor.slotFixedHint') : t('scheduleEditor.slotGridHint') }}</p>
+    </div>
     <!-- шаг сетки нужен только когда клиентка выбирает время внутри часов -->
-    <template v-if="!fixed">
+    <div v-if="!fixed" class="stack" data-tour="step">
       <NokiSegmented v-model="form.slot_step_min" :label="t('onboarding.time.step')" :options="stepOptions" />
       <p class="hint">{{ t('onboarding.time.stepHint') }}</p>
-    </template>
+    </div>
 
-    <NokiSegmented v-model="form.schedule_mode" :label="t('scheduleEditor.mode')" :options="modeOptions" />
-    <p class="hint">{{ form.schedule_mode === EnumScheduleMode.Weekly ? t('scheduleEditor.weeklyHint') : t('scheduleEditor.datesHint') }}</p>
+    <div class="stack" data-tour="schedule-mode">
+      <NokiSegmented v-model="form.schedule_mode" :label="t('scheduleEditor.mode')" :options="modeOptions" />
+      <p class="hint">{{ form.schedule_mode === EnumScheduleMode.Weekly ? t('scheduleEditor.weeklyHint') : t('scheduleEditor.datesHint') }}</p>
+    </div>
     <WorkHoursEditor
       v-if="form.schedule_mode === EnumScheduleMode.Weekly"
       v-model="form.work_hours"
@@ -79,7 +84,10 @@ function openSheet() {
   monthEditor.value?.openSheet()
 }
 
-defineExpose({ openSheet })
+/** Календарь «по датам», если он на экране: для тура-примера */
+const datesEditor = () => monthEditor.value
+
+defineExpose({ openSheet, datesEditor })
 </script>
 
 <style scoped lang="scss">

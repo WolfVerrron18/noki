@@ -30,20 +30,20 @@
     </button>
 
     <nav class="menu">
-      <button v-press="{ depth: 0.04 }" type="button" data-tour="services" @click="router.push({ name: 'master-services' })">
+      <button v-press="{ depth: 0.04 }" v-fill type="button" data-tour="services" @click="router.push({ name: 'master-services' })">
         <span>{{ t('master.menu.services') }}</span>
         <span class="hint">{{ t('master.menu.servicesCount', activeCount) }}</span>
       </button>
-      <button v-press="{ depth: 0.04 }" type="button" data-tour="schedule" @click="router.push({ name: 'master-schedule' })">
+      <button v-press="{ depth: 0.04 }" v-fill type="button" data-tour="schedule" @click="router.push({ name: 'master-schedule' })">
         <span>{{ t('master.menu.schedule') }}</span>
       </button>
-      <button v-press="{ depth: 0.04 }" type="button" data-tour="hours" @click="router.push({ name: 'master-hours' })">
+      <button v-press="{ depth: 0.04 }" v-fill type="button" data-tour="hours" @click="router.push({ name: 'master-hours' })">
         <span>{{ t('master.menu.hours') }}</span>
       </button>
-      <button v-press="{ depth: 0.04 }" type="button" data-tour="appearance" @click="router.push({ name: 'master-mascot' })">
+      <button v-press="{ depth: 0.04 }" v-fill type="button" data-tour="appearance" @click="router.push({ name: 'master-mascot' })">
         <span>{{ t('master.menu.mascot') }}</span>
       </button>
-      <button v-press="{ depth: 0.04 }" type="button" @click="router.push({ name: 'master-profile' })">
+      <button v-press="{ depth: 0.04 }" v-fill type="button" @click="router.push({ name: 'master-profile' })">
         <span>{{ t('master.menu.profile') }}</span>
       </button>
     </nav>

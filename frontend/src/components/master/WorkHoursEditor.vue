@@ -1,6 +1,6 @@
 <template>
   <div class="stack">
-    <div class="presets">
+    <div class="presets" data-tour="week-presets">
       <span class="label">{{ t('onboarding.hours.presets') }}</span>
       <div class="chips">
         <button v-press="{ depth: 0.1 }" type="button" @click="preset(['1', '2', '3', '4', '5'])">{{ t('onboarding.hours.presetWeekdays') }}</button>
@@ -10,7 +10,7 @@
     </div>
 
     <ul class="days">
-      <li v-for="d in WEEKDAYS" :key="d" :class="{ off: !isOn(d), invalid: invalidDays?.includes(d) || !!errorOf(d) }">
+      <li v-for="d in WEEKDAYS" :key="d" :data-tour="`day-${d}`" :class="{ off: !isOn(d), invalid: invalidDays?.includes(d) || !!errorOf(d) }">
         <div class="main">
           <NokiSwitch :model-value="isOn(d)" :label="t(`weekday.short.${d}`)" @update:model-value="setDay(d, !!$event)" />
           <div v-if="!fixed && hoursOf(d)" class="times">

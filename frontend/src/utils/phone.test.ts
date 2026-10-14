@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayPhone, formatPhoneInput, normalizePhone, phoneCountry } from '@/utils/phone'
+import { displayPhone, formatPhoneInput, joinPhone, normalizePhone, phoneCountry, splitPhone } from '@/utils/phone'
 
 describe('phoneCountry', () => {
   it('по поясу мастера, иначе Россия', () => {
@@ -45,5 +45,35 @@ describe('displayPhone', () => {
   it('E.164 → международный вид', () => {
     expect(displayPhone('+79001234567')).toBe('+7 900 123 45 67')
     expect(displayPhone('как-то так')).toBe('как-то так')
+  })
+})
+
+describe('splitPhone', () => {
+  it('вставка одного номера в любой записи → +7 и номер без кода', () => {
+    for (const v of ['89270576065', '79270576065', '+79270576065', '8-(927)-057-60-65', '+7 (927) 057-60-65', '8 927 057 60 65', '9270576065', '007 927 057 60 65']) {
+      expect(splitPhone(v, 'RU')).toEqual({ code: '7', national: '9270576065' })
+    }
+  })
+
+  it('городской номер с 8 не теряет код города', () => {
+    expect(splitPhone('8 812 123-45-67', 'RU')).toEqual({ code: '7', national: '8121234567' })
+  })
+
+  it('пока номер неполный, цифры как есть', () => {
+    expect(splitPhone('927', 'RU')).toEqual({ code: '7', national: '927' })
+    expect(splitPhone('8', 'RU')).toEqual({ code: '7', national: '8' })
+    expect(splitPhone('', 'RU')).toEqual({ code: '7', national: '' })
+  })
+
+  it('чужой код с плюсом сохраняется', () => {
+    expect(splitPhone('+380 50 123 45 67', 'RU')).toEqual({ code: '380', national: '501234567' })
+  })
+})
+
+describe('joinPhone', () => {
+  it('код и номер с маской, пустой — пусто', () => {
+    expect(joinPhone({ code: '7', national: '9270576065' })).toBe('+7 927 057 60 65')
+    expect(joinPhone({ code: '7', national: '' })).toBe('')
+    expect(normalizePhone(joinPhone(splitPhone('89270576065', 'RU')), 'RU')).toBe('+79270576065')
   })
 })

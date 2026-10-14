@@ -35,7 +35,9 @@
       </p>
 
       <footer v-if="canCancel || canComplete" class="actions">
-        <NokiButton v-if="canComplete" variant="soft" class="action" @click="emit('complete')">
+        <!-- главное действие у начавшейся записи: залитая кнопка с галочкой, чтобы не читалась как статус -->
+        <NokiButton v-if="canComplete" class="action" @click="emit('complete')">
+          <svg class="check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5l4 4 9-9" /></svg>
           {{ t('schedule.markDone') }}
         </NokiButton>
         <NokiButton v-if="canCancel" variant="outline" class="action" @click="emit('cancel')">
@@ -272,8 +274,23 @@ const initial = computed(() => {
 
 .action {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
   min-height: calc(var(--control-height) - var(--space-sm));
   font-size: var(--font-size-sm);
+}
+
+.check {
+  width: var(--space-lg);
+  height: var(--space-lg);
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 </style>
